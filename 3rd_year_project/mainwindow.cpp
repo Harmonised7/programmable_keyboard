@@ -168,17 +168,18 @@ void MainWindow::selectButton( int index )
 
 void MainWindow::on_addActionButton_clicked()
 {
-    QString type = ui->entryTypeBox->currentText();
+    QString dataType = ui->dataTypeBox->currentText();
+    QString entryType = ui->entryTypeBox->currentText();
     ButtonData *data = getSelectedButtonData();
-//    Entry *action = ButtonData::getTemplateEntry(type);
-//    #ifdef DEBUG
-//    qDebug() << "Adding Action" << type << "to button" << _selectedButtonIndex;
-//    qDebug() << getSelectedButtonData()->getEntries()->size();
-//    #endif
-//    getSelectedButtonData()->addEntry( action );
-//    #ifdef DEBUG
-//    qDebug() << getSelectedButtonData()->getEntries()->size();
-//    #endif
+    EntryList *entries = data->getData(dataType);
+    Entry *entry = ButtonData::generateTemplateEntry(dataType, entryType);
+    #ifdef DEBUG
+    qDebug() << "Adding Action" << entryType << "to button" << _selectedButtonIndex << dataType;
+    #endif
+    data->addEntry(dataType, entry);
+    #ifdef DEBUG
+    qDebug() << entries->size() << "entries";
+    #endif
     updateActionsTree();
 }
 
@@ -207,17 +208,29 @@ void MainWindow::on_removeActionButton_clicked()
 
 void MainWindow::on_buttonInfoTreeWidget_itemChanged( QTreeWidgetItem *item, int column )
 {
-//    int index = getEntryIndex(item);
-//    Entry *action = getSelectedButtonData()->getEntry(index);
-//    QString property = item->text(0);
-//    QString value = item->text(1);
-//    #ifdef DEBUG
-//    qDebug() << "changed" << property << "to" << value;
-//    #endif
-//    if( isChildOfActions(item) )
-//        action->setValue(value);
-//    else
-//        action->setProperty(property, value);
+    QString key = item->text(Prefs::keyRow);
+    QString value = item->text(Prefs::valueRow);
+    QString dataType = getEntryType(item);
+    EntryList *entries = getSelectedButtonData()->getData(dataType);
+    int index = getEntryIndex(item);
+    if(index > -1)
+    {
+        Entry *entry = entries->value(index);
+        #ifdef DEBUG
+        qDebug() << "changed" << key << "from" << entry->value() << "to" << value;
+        #endif
+        entries->value(index)->setValue(value);
+    }
+    else
+    {
+        QTreeWidgetItem *parent = item->parent();
+        index = getEntryIndex(parent);
+        Entry *entry = entries->value(index);
+        #ifdef DEBUG
+        qDebug() << "changed" << dataType << parent->text(Prefs::keyRow) << "property" << key << "from" << entry->property(key) << "to" << value;
+        #endif
+        entry->setProperty(key, value);
+    }
 }
 
 void MainWindow::on_dataTypeBox_currentIndexChanged(int index)

@@ -24,9 +24,9 @@ void ButtonData::init()
     {
         _buttonsDataMap->insert( i, new ButtonData() );
     }
-    addTemplateAction(ButtonData::MISC, "red", "255");
-    addTemplateAction(ButtonData::MISC, "green", "255");
-    addTemplateAction(ButtonData::MISC, "blue", "255");
+//    addTemplateAction(ButtonData::MISC, "red", "255");
+//    addTemplateAction(ButtonData::MISC, "green", "255");
+//    addTemplateAction(ButtonData::MISC, "blue", "255");
 
     addButtonTemplateActions(ButtonData::PRESS);
     addButtonTemplateActions(ButtonData::HOLD);
@@ -40,7 +40,7 @@ QList<QString> ButtonData::getTemplateKeys(QString dataType)
     return _templateEntriesMap->value(dataType)->keys();
 }
 
-Entry *ButtonData::getTemplateEntry(QString dataType, QString type)
+Entry *ButtonData::generateTemplateEntry(QString dataType, QString type)
 {
 //    if( !_templateActions.contains( type ) )
 //        qDebug() << "Invalid action type '" << type << "' requested!";

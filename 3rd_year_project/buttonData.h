@@ -20,7 +20,7 @@ class ButtonData
 
         static void init();
         static QList<QString> getTemplateKeys(QString dataType);
-        static Entry *getTemplateEntry(QString dataType, QString type);
+        static Entry *generateTemplateEntry(QString dataType, QString type);
 
         static ButtonData *getButtonData(int buttonIndex);
 
@@ -34,11 +34,11 @@ class ButtonData
         EntryList *getEntries(QString dataType);
         Entry *getEntry(QString dataType,  int entryIndex);
 
-        inline static const QString MISC = "misc";
+//        inline static const QString MISC = "misc";
         inline static const QString PRESS = "press";
         inline static const QString HOLD = "hold";
         inline static const QString RELEASE = "release";
-        inline static const QList<QString> DATA_KEYS = {MISC, PRESS, HOLD, RELEASE};
+        inline static const QList<QString> DATA_KEYS = {/*MISC,*/ PRESS, HOLD, RELEASE};
 
     private:
         inline static TemplateEntriesMap *_templateEntriesMap = new TemplateEntriesMap;
