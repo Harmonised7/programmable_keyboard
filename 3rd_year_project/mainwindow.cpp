@@ -92,36 +92,50 @@ void MainWindow::updateActionsTree()
         #endif
         for(QString dataKey : ButtonData::DATA_KEYS)
         {
+            int i = 0;
             QTreeWidgetItem *treeItem = _treeItemsMap.value(dataKey);
 
             for( Entry *item : *data->getData(dataKey) )
             {
                 #ifdef DEBUG
-                qDebug() << "\tLoading action" << item->type() << item->value() << '|' << item->properties()->size() << "properties";
+                qDebug() << "\tLoading" << dataKey << item->type() << item->value() << '|' << item->properties()->size() << "properties";
                 #endif
-                treeItem->addChild( item->toTreeWidgetItem() );
+                QTreeWidgetItem *treeEntry = item->toTreeWidgetItem();
+                treeEntry->setText(Prefs::numberRow, QString::number(++i));
+                treeItem->addChild( treeEntry );
             }
         }
     }
 }
 
-QString MainWindow::getEntryType(QTreeWidgetItem *item)
+QString MainWindow::getDataType(QTreeWidgetItem *item)
 {
-    for(QString key : _treeItemsMap.keys())
+    if(item->parent())
     {
-        if(isParentOf(item, _treeItemsMap.value(key)))
-            return key;
+        for(QString key : _treeItemsMap.keys())
+        {
+            if(isParentOf(item, _treeItemsMap.value(key)))
+                return key;
+        }
     }
-    qDebug() << "PARENTLESS TREE ITEM";
+    else
+        qDebug() << "PARENTLESS TREE ITEM";
     return "";
 }
 
 int MainWindow::getEntryIndex(QTreeWidgetItem *item)
 {
-
-    //Actions can only be in second column
-    if( item->columnCount() > 1 )
-        return _treeItemsMap.value(getEntryType(item))->indexOfChild(item);
+    QString dataType = getDataType(item);
+    //If valid data type
+    if(dataType.length() > 0)
+    {
+        QTreeWidgetItem *treeItem = _treeItemsMap.value(getDataType(item));
+        //Entries can only be in second column
+        if( item->columnCount() > 1 )
+            return treeItem->indexOfChild(item);
+        else
+            return -1;
+    }
     else
         return -1;
 }
@@ -194,14 +208,23 @@ void MainWindow::on_removeActionButton_clicked()
     QList<QTreeWidgetItem*> items = ui->buttonInfoTreeWidget->selectedItems();
     for( QTreeWidgetItem *item : items )
     {
-        int index = getEntryIndex( item );
-        if( index >= 0 )
+        int index = getEntryIndex(item);
+        if(index < 0 && item->parent())
+            index = getEntryIndex(item->parent());
+        if(index > -1)
         {
+            QString dataType = getDataType(item);
             #ifdef DEBUG
-            qDebug() << "Deleting action" << index << "in" << _selectedButtonIndex;
+            qDebug() << "Deleting entry" << index << "from button" << _selectedButtonIndex+1 << dataType;
             #endif
-//            getSelectedButtonData()->delEntry( index );
-//            _actionsTreeItem->removeChild( item );
+            //Remove from data
+            getSelectedButtonData()->getEntries(dataType)->remove(index);
+            //Remove from tree
+            QTreeWidgetItem *treeItem = _treeItemsMap.value(dataType);
+            if(item->parent() == treeItem)
+                treeItem->removeChild(item);
+            else    //If selected item is a property of an entry - remove the parent
+                treeItem->removeChild(item->parent());
         }
     }
 }
@@ -210,7 +233,7 @@ void MainWindow::on_buttonInfoTreeWidget_itemChanged( QTreeWidgetItem *item, int
 {
     QString key = item->text(Prefs::keyRow);
     QString value = item->text(Prefs::valueRow);
-    QString dataType = getEntryType(item);
+    QString dataType = getDataType(item);
     EntryList *entries = getSelectedButtonData()->getData(dataType);
     int index = getEntryIndex(item);
     if(index > -1)

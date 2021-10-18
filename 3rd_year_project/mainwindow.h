@@ -27,7 +27,7 @@ public:
     void updateActionsTree();
     ButtonData *getSelectedButtonData();
 
-    QString getEntryType(QTreeWidgetItem *item);
+    QString getDataType(QTreeWidgetItem *item);
     int getEntryIndex(QTreeWidgetItem *item);
     bool isParentOf(QTreeWidgetItem *potentialChild, QTreeWidgetItem *potentialParent);
 
