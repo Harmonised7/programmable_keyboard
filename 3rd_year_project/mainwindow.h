@@ -24,7 +24,8 @@ public:
 
     void initItemTree();
 
-    void updateActionsTree();
+    void updateItemsTree();
+    void updateItemsTreeIndices();
     ButtonData *getSelectedButtonData();
 
     QString getDataType(QTreeWidgetItem *item);
@@ -45,6 +46,8 @@ private slots:
     void on_buttonInfoTreeWidget_itemChanged(QTreeWidgetItem *item, int column);
 
     void on_dataTypeBox_currentIndexChanged(int index);
+
+    void on_buttonInfoTreeWidget_itemExpanded(QTreeWidgetItem *item);
 
 private:
     Ui::MainWindow *ui;

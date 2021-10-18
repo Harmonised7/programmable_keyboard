@@ -77,7 +77,7 @@ void MainWindow::initItemTree()
     }
 }
 
-void MainWindow::updateActionsTree()
+void MainWindow::updateItemsTree()
 {
     for(QString dataKey : ButtonData::DATA_KEYS)
     {
@@ -100,10 +100,22 @@ void MainWindow::updateActionsTree()
                 #ifdef DEBUG
                 qDebug() << "\tLoading" << dataKey << item->type() << item->value() << '|' << item->properties()->size() << "properties";
                 #endif
-                QTreeWidgetItem *treeEntry = item->toTreeWidgetItem();
-                treeEntry->setText(Prefs::numberRow, QString::number(++i));
-                treeItem->addChild( treeEntry );
+                treeItem->addChild( item->toTreeWidgetItem() );
             }
+        }
+    }
+    updateItemsTreeIndices();
+}
+
+void MainWindow::updateItemsTreeIndices()
+{
+    if( _selectedButtonIndex >= 0 )
+    {
+        for(QString dataKey : ButtonData::DATA_KEYS)
+        {
+            QTreeWidgetItem *tree = _treeItemsMap.value(dataKey);
+            for(int i = 0; i < tree->childCount(); i++)
+                tree->child(i)->setText(Prefs::numberRow, QString::number(i+1));
         }
     }
 }
@@ -177,13 +189,15 @@ void MainWindow::selectButton( int index )
     button->setStyleSheet( "background-color: green" );
     ui->nameLabel->setText( button->text() );
 
-    updateActionsTree();
+    updateItemsTree();
 }
 
 void MainWindow::on_addActionButton_clicked()
 {
     QString dataType = ui->dataTypeBox->currentText();
     QString entryType = ui->entryTypeBox->currentText();
+    if(!ButtonData::hasTemplate(dataType, entryType))
+        return; //Do nothing if template does not exist
     ButtonData *data = getSelectedButtonData();
     EntryList *entries = data->getData(dataType);
     Entry *entry = ButtonData::generateTemplateEntry(dataType, entryType);
@@ -194,7 +208,7 @@ void MainWindow::on_addActionButton_clicked()
     #ifdef DEBUG
     qDebug() << entries->size() << "entries";
     #endif
-    updateActionsTree();
+    updateItemsTree();
 }
 
 void MainWindow::on_buttonInfoTreeWidget_itemClicked( QTreeWidgetItem *item, int column )
@@ -227,6 +241,7 @@ void MainWindow::on_removeActionButton_clicked()
                 treeItem->removeChild(item->parent());
         }
     }
+    updateItemsTreeIndices();
 }
 
 void MainWindow::on_buttonInfoTreeWidget_itemChanged( QTreeWidgetItem *item, int column )

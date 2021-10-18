@@ -1,4 +1,4 @@
-#ifndef ACTIONS_H
+﻿#ifndef ACTIONS_H
 #define ACTIONS_H
 
 #include "util.h"
@@ -21,6 +21,7 @@ class ButtonData
         static void init();
         static QList<QString> getTemplateKeys(QString dataType);
         static Entry *generateTemplateEntry(QString dataType, QString type);
+        static bool hasTemplate(QString dataType, QString type);
 
         static ButtonData *getButtonData(int buttonIndex);
 

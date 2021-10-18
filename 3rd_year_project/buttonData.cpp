@@ -42,8 +42,6 @@ QList<QString> ButtonData::getTemplateKeys(QString dataType)
 
 Entry *ButtonData::generateTemplateEntry(QString dataType, QString type)
 {
-//    if( !_templateActions.contains( type ) )
-//        qDebug() << "Invalid action type '" << type << "' requested!";
     Entry *action = _templateEntriesMap->value(dataType)->value( type );
     Entry *newAction = new Entry( action->type(), action->value() );
     for( const QString key : action->properties()->keys() )
@@ -51,6 +49,11 @@ Entry *ButtonData::generateTemplateEntry(QString dataType, QString type)
         newAction->setProperty( key, action->property(key) );
     }
     return newAction;
+}
+
+bool ButtonData::hasTemplate(QString dataType, QString type)
+{
+    return _templateEntriesMap->value(dataType)->contains(type);
 }
 
 ButtonData *ButtonData::getButtonData(int buttonIndex)
