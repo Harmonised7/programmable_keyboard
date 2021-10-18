@@ -10,33 +10,45 @@
 typedef QList<Entry*> EntryList;
 typedef QMap<QString, EntryList*> EntryListMap;
 
+typedef QMap<QString, Entry*> TemplateEntries;
+typedef QMap<QString, TemplateEntries*> TemplateEntriesMap;
+
 class ButtonData
 {
     public:
         ButtonData( EntryList actions = {} );
 
         static void init();
-        static QList<QString> getActionsKeys();
-        static Entry *getTemplateAction( QString type );
+        static QList<QString> getTemplateKeys(QString dataType);
+        static Entry *getTemplateEntry(QString dataType, QString type);
 
-        static ButtonData *getButtonActions( int i );
+        static ButtonData *getButtonData(int buttonIndex);
 
-        void addAction( Entry *action );
+        EntryList *getData(QString dataType);
 
-        void delAction( Entry *action );
-        void delAction( int i );
+        void addEntry(QString dataType, Entry *action);
 
-        EntryList *getActions();
-        Entry *getAction( int i );
+        void delEntry(QString dataType, Entry *action);
+        void delEntry(QString dataType, int entryIndex);
+
+        EntryList *getEntries(QString dataType);
+        Entry *getEntry(QString dataType,  int entryIndex);
+
+        inline static const QString MISC = "misc";
+        inline static const QString PRESS = "press";
+        inline static const QString HOLD = "hold";
+        inline static const QString RELEASE = "release";
+        inline static const QList<QString> DATA_KEYS = {MISC, PRESS, HOLD, RELEASE};
 
     private:
-        inline static QMap<QString, Entry*> _templateActions;
-        inline static QMap<int, ButtonData*> _buttonsActionsLists;
+        inline static TemplateEntriesMap *_templateEntriesMap = new TemplateEntriesMap;
+        inline static QMap<int, ButtonData*> *_buttonsDataMap = new QMap<int, ButtonData*>;
 
         EntryListMap *_data = new EntryListMap();
-        EntryList *_actions = new EntryList();
+//        EntryList *_actions = new EntryList();
 
-        static void addTemplateAction( QString key, QString value, Properties properties = {} );
+        static void addTemplateAction(QString templateType, QString key, QString value, Properties properties = {});
+        static void addButtonTemplateActions(QString templateType);
 };
 
 #endif // ACTIONS_H

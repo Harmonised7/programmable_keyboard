@@ -25,9 +25,11 @@ public:
     void initItemTree();
 
     void updateActionsTree();
-    int getActionIndex( QTreeWidgetItem *item );
-    bool isChildOfActions( QTreeWidgetItem *item );
-    ButtonData *getSelectedActions();
+    ButtonData *getSelectedButtonData();
+
+    QString getEntryType(QTreeWidgetItem *item);
+    int getEntryIndex(QTreeWidgetItem *item);
+    bool isParentOf(QTreeWidgetItem *potentialChild, QTreeWidgetItem *potentialParent);
 
 public slots:
     void buttonPress();
@@ -42,6 +44,8 @@ private slots:
 
     void on_buttonInfoTreeWidget_itemChanged(QTreeWidgetItem *item, int column);
 
+    void on_dataTypeBox_currentIndexChanged(int index);
+
 private:
     Ui::MainWindow *ui;
 
@@ -49,7 +53,7 @@ private:
     QList<QPushButton*> _buttons;
     const float _bSize = 100;
     int _selectedButtonIndex = 0;
-    QTreeWidgetItem *_actionsTreeItem;
+    QMap<QString, QTreeWidgetItem*> _treeItemsMap;
 
     // Methods
     // ...

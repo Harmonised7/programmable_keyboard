@@ -2,49 +2,49 @@
 
 ButtonData::ButtonData( QList<Entry *> actions )
 {
-    for( Entry *action : actions )
+    for(QString key : ButtonData::DATA_KEYS)
     {
-        _actions->push_back( action );
+        _data->insert(key, new EntryList());
+    }
+    for(Entry *action : actions)
+    {
+        _data->value(ButtonData::PRESS)->push_back(action);
     }
 }
-
+/**
+ * static initializer
+ */
 void ButtonData::init()
 {
     int buttonCount = Prefs::bCol * Prefs::bRow;
+
+    for(QString key : ButtonData::DATA_KEYS)
+        _templateEntriesMap->insert(key, new TemplateEntries);
     for( int i = 0; i < buttonCount; ++i )
     {
-        _buttonsActionsLists.insert( i, new ButtonData() );
+        _buttonsDataMap->insert( i, new ButtonData() );
     }
+    addTemplateAction(ButtonData::MISC, "red", "255");
+    addTemplateAction(ButtonData::MISC, "green", "255");
+    addTemplateAction(ButtonData::MISC, "blue", "255");
 
-    addTemplateAction( "delay", "500" );
-
-    addTemplateAction( "type", "a sentence", {{ "speed", "20" }} );
-
-    addTemplateAction( "press", "ENTER", {{ "duration", "50" }} );
-    addTemplateAction( "press_down", "ENTER" );
-    addTemplateAction( "press_up", "ENTER" );
-
-    addTemplateAction( "click", "0", { { "times", "5" }, { "speed", "20" } } );
-    addTemplateAction( "click_up", "0" );
-    addTemplateAction( "click_down", "0" );
-
-    addTemplateAction( "move_mouse", "0", { { "x", "100" }, { "y", "100" }, { "speed", "20" } } );
-    addTemplateAction( "drag_mouse", "0", { { "x", "100" }, { "y", "100" }, { "speed", "20" } } );
-    addTemplateAction( "set_mouse", "0", { { "x", "100" }, { "y", "100" } } );
+    addButtonTemplateActions(ButtonData::PRESS);
+    addButtonTemplateActions(ButtonData::HOLD);
+    addButtonTemplateActions(ButtonData::RELEASE);
 }
 
 
 
-QList<QString> ButtonData::getActionsKeys()
+QList<QString> ButtonData::getTemplateKeys(QString dataType)
 {
-    return _templateActions.keys();
+    return _templateEntriesMap->value(dataType)->keys();
 }
 
-Entry *ButtonData::getTemplateAction( QString type )
+Entry *ButtonData::getTemplateEntry(QString dataType, QString type)
 {
-    if( !_templateActions.contains( type ) )
-        qDebug() << "Invalid action type '" << type << "' requested!";
-    Entry *action = _templateActions.value( type );
+//    if( !_templateActions.contains( type ) )
+//        qDebug() << "Invalid action type '" << type << "' requested!";
+    Entry *action = _templateEntriesMap->value(dataType)->value( type );
     Entry *newAction = new Entry( action->type(), action->value() );
     for( const QString key : action->properties()->keys() )
     {
@@ -53,37 +53,61 @@ Entry *ButtonData::getTemplateAction( QString type )
     return newAction;
 }
 
-ButtonData *ButtonData::getButtonActions( int i )
+ButtonData *ButtonData::getButtonData(int buttonIndex)
 {
-    return _buttonsActionsLists.value( i );
+    return _buttonsDataMap->value(buttonIndex);
 }
 
-void ButtonData::addAction( Entry *action )
+EntryList *ButtonData::getData(QString dataType)
 {
-    _actions->push_back( action );
+    return _data->value(dataType);
 }
 
-void ButtonData::delAction( Entry *action )
+void ButtonData::addEntry(QString dataType, Entry *action)
 {
-    delAction( _actions->indexOf( action ) );
+    getEntries(dataType)->push_back( action );
 }
 
-void ButtonData::delAction( int i )
+void ButtonData::delEntry(QString dataType, Entry *action)
 {
-    _actions->remove( i );
+    delEntry(dataType, getEntries(dataType)->indexOf(action));
 }
 
-QList<Entry *> *ButtonData::getActions()
+void ButtonData::delEntry(QString dataType, int entryIndex)
 {
-    return _actions;
+    getEntries(dataType)->remove(entryIndex);
 }
 
-Entry *ButtonData::getAction( int i )
+EntryList *ButtonData::getEntries(QString dataType)
 {
-    return _actions->value( i );
+    return _data->value(dataType);
 }
 
-void ButtonData::addTemplateAction( QString key, QString value, Properties properties )
+Entry *ButtonData::getEntry(QString dataType, int entryIndex)
 {
-    _templateActions.insert( key, new Entry( key, value, properties ) );
+    return getEntries(dataType)->value(entryIndex);
+}
+
+void ButtonData::addTemplateAction(QString templateType, QString key, QString value, Properties properties)
+{
+    _templateEntriesMap->value(templateType)->insert(key, new Entry(key, value, properties));
+}
+
+void ButtonData::addButtonTemplateActions(QString templateType)
+{
+    addTemplateAction( templateType, "delay", "500" );
+
+    addTemplateAction( templateType, "type", "a sentence", {{ "speed", "20" }} );
+
+    addTemplateAction( templateType, "press", "ENTER", {{ "duration", "50" }} );
+    addTemplateAction( templateType, "press_down", "ENTER" );
+    addTemplateAction( templateType, "press_up", "ENTER" );
+
+    addTemplateAction( templateType, "click", "0", { { "times", "5" }, { "speed", "20" } } );
+    addTemplateAction( templateType, "click_up", "0" );
+    addTemplateAction( templateType, "click_down", "0" );
+
+    addTemplateAction( templateType, "move_mouse", "0", { { "x", "100" }, { "y", "100" }, { "speed", "20" } } );
+    addTemplateAction( templateType, "drag_mouse", "0", { { "x", "100" }, { "y", "100" }, { "speed", "20" } } );
+    addTemplateAction( templateType, "set_mouse", "0", { { "x", "100" }, { "y", "100" } } );
 }

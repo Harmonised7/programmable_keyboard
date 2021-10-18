@@ -16,10 +16,10 @@ MainWindow::MainWindow(QWidget *parent) :
     //Initialize action types
     ButtonData::init();
 
-    //Populate action types
-    for( QString type : ButtonData::getActionsKeys() )
+    //Populate on press types
+    for(QString key : ButtonData::DATA_KEYS)
     {
-        ui->actionTypeBox->addItem( type );
+        ui->dataTypeBox->addItem(key);
     }
 
     //Clear a QoL text
@@ -66,52 +66,82 @@ void MainWindow::initItemTree()
     ui->buttonInfoTreeWidget->header()->setVisible( true );
     ui->buttonInfoTreeWidget->header()->resizeSection( Prefs::numberRow, 10 );
 
-    _actionsTreeItem = new QTreeWidgetItem();
-    _actionsTreeItem->setText( Prefs::keyRow, "actions" );
-    _actionsTreeItem->setFlags( Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable );
-    ui->buttonInfoTreeWidget->addTopLevelItem( _actionsTreeItem );
-    _actionsTreeItem->setExpanded( true );
+    for(QString key : ButtonData::DATA_KEYS)
+    {
+        QTreeWidgetItem *treeItem = new QTreeWidgetItem();
+        treeItem->setText( Prefs::keyRow, key );
+        treeItem->setFlags( Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable );
+        ui->buttonInfoTreeWidget->addTopLevelItem( treeItem );
+        treeItem->setExpanded( true );
+        _treeItemsMap.insert(key, treeItem);
+    }
 }
 
 void MainWindow::updateActionsTree()
 {
-    Util::clearQTreeWidgetItemChildren( _actionsTreeItem );
+    for(QString dataKey : ButtonData::DATA_KEYS)
+    {
+        QTreeWidgetItem *treeItem = _treeItemsMap.value(dataKey);
+        Util::clearQTreeWidgetItemChildren( treeItem );
+    }
     if( _selectedButtonIndex >= 0 )
     {
+        ButtonData *data = getSelectedButtonData();
         #ifdef DEBUG
-        qDebug() << "Loading button" << _selectedButtonIndex+1 << '|' << getSelectedActions()->getActions()->size() << "actions";
+        qDebug() << "Loading button" << _selectedButtonIndex+1;
         #endif
-        for( Entry *item : *getSelectedActions()->getActions() )
+        for(QString dataKey : ButtonData::DATA_KEYS)
         {
-            #ifdef DEBUG
-            qDebug() << "\tLoading action" << item->type() << item->value() << '|' << item->properties()->size() << "properties";
-            #endif
-            _actionsTreeItem->addChild( item->toTreeWidgetItem() );
+            QTreeWidgetItem *treeItem = _treeItemsMap.value(dataKey);
+
+            for( Entry *item : *data->getData(dataKey) )
+            {
+                #ifdef DEBUG
+                qDebug() << "\tLoading action" << item->type() << item->value() << '|' << item->properties()->size() << "properties";
+                #endif
+                treeItem->addChild( item->toTreeWidgetItem() );
+            }
         }
     }
 }
 
-int MainWindow::getActionIndex( QTreeWidgetItem *item )
+QString MainWindow::getEntryType(QTreeWidgetItem *item)
 {
+    for(QString key : _treeItemsMap.keys())
+    {
+        if(isParentOf(item, _treeItemsMap.value(key)))
+            return key;
+    }
+    qDebug() << "PARENTLESS TREE ITEM";
+    return "";
+}
+
+int MainWindow::getEntryIndex(QTreeWidgetItem *item)
+{
+
     //Actions can only be in second column
     if( item->columnCount() > 1 )
+        return _treeItemsMap.value(getEntryType(item))->indexOfChild(item);
+    else
+        return -1;
+}
+
+bool MainWindow::isParentOf(QTreeWidgetItem *potentialChild, QTreeWidgetItem *potentialParent)
+{
+    QTreeWidgetItem *parent = potentialChild->parent();
+    while(parent)
     {
-        if( item->parent() == _actionsTreeItem )
-            return _actionsTreeItem->indexOfChild( item );
-        else if( item->parent()->parent() == _actionsTreeItem )
-            return _actionsTreeItem->indexOfChild( item->parent() );
+        if(parent == potentialParent)
+            return true;
+        else
+            parent = parent->parent();
     }
-    return -1;
+    return false;
 }
 
-bool MainWindow::isChildOfActions(QTreeWidgetItem *item)
+ButtonData *MainWindow::getSelectedButtonData()
 {
-    return item->parent() == _actionsTreeItem;
-}
-
-ButtonData *MainWindow::getSelectedActions()
-{
-    return ButtonData::getButtonActions(_selectedButtonIndex);
+    return ButtonData::getButtonData(_selectedButtonIndex);
 }
 
 void MainWindow::buttonPress()
@@ -138,16 +168,17 @@ void MainWindow::selectButton( int index )
 
 void MainWindow::on_addActionButton_clicked()
 {
-    QString type = ui->actionTypeBox->currentText();
-    Entry *action = ButtonData::getTemplateAction( type );
-    #ifdef DEBUG
-    qDebug() << "Adding Action" << type << "to button" << _selectedButtonIndex;
-    qDebug() << getSelectedActions()->getActions()->size();
-    #endif
-    getSelectedActions()->addAction( action );
-    #ifdef DEBUG
-    qDebug() << getSelectedActions()->getActions()->size();
-    #endif
+    QString type = ui->entryTypeBox->currentText();
+    ButtonData *data = getSelectedButtonData();
+//    Entry *action = ButtonData::getTemplateEntry(type);
+//    #ifdef DEBUG
+//    qDebug() << "Adding Action" << type << "to button" << _selectedButtonIndex;
+//    qDebug() << getSelectedButtonData()->getEntries()->size();
+//    #endif
+//    getSelectedButtonData()->addEntry( action );
+//    #ifdef DEBUG
+//    qDebug() << getSelectedButtonData()->getEntries()->size();
+//    #endif
     updateActionsTree();
 }
 
@@ -162,29 +193,37 @@ void MainWindow::on_removeActionButton_clicked()
     QList<QTreeWidgetItem*> items = ui->buttonInfoTreeWidget->selectedItems();
     for( QTreeWidgetItem *item : items )
     {
-        int index = getActionIndex( item );
+        int index = getEntryIndex( item );
         if( index >= 0 )
         {
             #ifdef DEBUG
             qDebug() << "Deleting action" << index << "in" << _selectedButtonIndex;
             #endif
-            getSelectedActions()->delAction( index );
-            _actionsTreeItem->removeChild( item );
+//            getSelectedButtonData()->delEntry( index );
+//            _actionsTreeItem->removeChild( item );
         }
     }
 }
 
 void MainWindow::on_buttonInfoTreeWidget_itemChanged( QTreeWidgetItem *item, int column )
 {
-    int index = getActionIndex(item);
-    Entry *action = getSelectedActions()->getAction(index);
-    QString property = item->text(0);
-    QString value = item->text(1);
-    #ifdef DEBUG
-    qDebug() << "changed" << property << "to" << value;
-    #endif
-    if( isChildOfActions(item) )
-        action->setValue(value);
-    else
-        action->setProperty(property, value);
+//    int index = getEntryIndex(item);
+//    Entry *action = getSelectedButtonData()->getEntry(index);
+//    QString property = item->text(0);
+//    QString value = item->text(1);
+//    #ifdef DEBUG
+//    qDebug() << "changed" << property << "to" << value;
+//    #endif
+//    if( isChildOfActions(item) )
+//        action->setValue(value);
+//    else
+//        action->setProperty(property, value);
 }
+
+void MainWindow::on_dataTypeBox_currentIndexChanged(int index)
+{
+    qDebug() << index << ui->dataTypeBox->itemText(index);
+    ui->entryTypeBox->clear();
+    ui->entryTypeBox->addItems(ButtonData::getTemplateKeys(ui->dataTypeBox->itemText(index)));
+}
+

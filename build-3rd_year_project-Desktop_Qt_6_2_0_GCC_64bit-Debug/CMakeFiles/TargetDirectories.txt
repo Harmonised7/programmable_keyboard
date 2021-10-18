@@ -1,5 +1,0 @@
-/media/2TB_Crucial_SSD/repos/programmable_keyboard/build-3rd_year_project-Desktop_Qt_6_2_0_GCC_64bit-Debug/CMakeFiles/edit_cache.dir
-/media/2TB_Crucial_SSD/repos/programmable_keyboard/build-3rd_year_project-Desktop_Qt_6_2_0_GCC_64bit-Debug/CMakeFiles/rebuild_cache.dir
-/media/2TB_Crucial_SSD/repos/programmable_keyboard/build-3rd_year_project-Desktop_Qt_6_2_0_GCC_64bit-Debug/CMakeFiles/3rd_year_project.dir
-/media/2TB_Crucial_SSD/repos/programmable_keyboard/build-3rd_year_project-Desktop_Qt_6_2_0_GCC_64bit-Debug/CMakeFiles/3rd_year_project_autogen_timestamp_deps.dir
-/media/2TB_Crucial_SSD/repos/programmable_keyboard/build-3rd_year_project-Desktop_Qt_6_2_0_GCC_64bit-Debug/CMakeFiles/3rd_year_project_autogen.dir
