@@ -4,6 +4,8 @@
 #include <QTreeWidgetItem>
 #include <QMap>
 #include <QString>
+#include <QJsonObject>
+#include <QJsonArray>
 
 typedef QMap<QString, QString> Properties;
 
@@ -25,8 +27,13 @@ class Entry
         Properties *properties();
 
         QTreeWidgetItem *toTreeWidgetItem();
-        //TODO: toJson
 
+        QJsonObject *toJson();
+
+        //Static fields
+        inline static const QString TYPE = "type";
+        inline static const QString VALUE = "value";
+        inline static const QString PROPERTIES = "properties";
 private:
         QString _type;
         QString _value;

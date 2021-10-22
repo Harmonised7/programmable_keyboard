@@ -61,6 +61,14 @@ ButtonData *ButtonData::getButtonData(int buttonIndex)
     return _buttonsDataMap->value(buttonIndex);
 }
 
+QJsonArray *ButtonData::allButtonsToJson()
+{
+    QJsonArray *json = new QJsonArray;
+    for(int index : _buttonsDataMap->keys())
+        json->push_back(*getButtonData(index)->toJson());
+    return json;
+}
+
 EntryList *ButtonData::getData(QString dataType)
 {
     return _data->value(dataType);
@@ -89,6 +97,19 @@ EntryList *ButtonData::getEntries(QString dataType)
 Entry *ButtonData::getEntry(QString dataType, int entryIndex)
 {
     return getEntries(dataType)->value(entryIndex);
+}
+
+QJsonObject *ButtonData::toJson()
+{
+    QJsonObject *json = new QJsonObject;
+    for(QString dataKey : DATA_KEYS)
+    {
+        QJsonArray dataJsonArray;
+        for(Entry *entry : *getData(dataKey))
+            dataJsonArray.push_back(*entry->toJson());
+        json->insert(dataKey, dataJsonArray);
+    }
+    return json;
 }
 
 void ButtonData::addTemplateAction(QString templateType, QString key, QString value, Properties properties)

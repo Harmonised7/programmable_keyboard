@@ -47,7 +47,7 @@ private slots:
 
     void on_dataTypeBox_currentIndexChanged(int index);
 
-    void on_buttonInfoTreeWidget_itemExpanded(QTreeWidgetItem *item);
+    void on_writeButton_clicked();
 
 private:
     Ui::MainWindow *ui;

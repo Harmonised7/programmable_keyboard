@@ -38,7 +38,7 @@ MainWindow::MainWindow(QWidget *parent) :
             button->setMinimumSize( _bSize, _bSize );
             button->setMaximumSize( _bSize, _bSize );
 
-            connect(button, SIGNAL( clicked() ), this, SLOT( buttonPress() ));
+            connect(button, SIGNAL(clicked()), this, SLOT(buttonPress()));
 
             _buttons.emplace(index, button);
             ui->buttonLayout->addWidget( _buttons[ index ], row, col );
@@ -61,7 +61,7 @@ MainWindow::~MainWindow()
 void MainWindow::initItemTree()
 {
     ui->buttonInfoTreeWidget->setAlternatingRowColors(true);
-    ui->buttonInfoTreeWidget->setStyleSheet( "alternate-background-color: #cccccc" );
+    ui->buttonInfoTreeWidget->setStyleSheet( "alternate-background-color: #dddddd" );
 
     ui->buttonInfoTreeWidget->header()->setVisible( true );
     ui->buttonInfoTreeWidget->header()->resizeSection( Prefs::numberRow, 10 );
@@ -172,7 +172,7 @@ ButtonData *MainWindow::getSelectedButtonData()
 
 void MainWindow::buttonPress()
 {
-    QPushButton *button = qobject_cast<QPushButton *>( sender() );
+    QPushButton *button = qobject_cast<QPushButton *>(sender());
     const int index = _buttons.indexOf( button );
 
     selectButton( index );
@@ -254,10 +254,13 @@ void MainWindow::on_buttonInfoTreeWidget_itemChanged( QTreeWidgetItem *item, int
     if(index > -1)
     {
         Entry *entry = entries->value(index);
-        #ifdef DEBUG
-        qDebug() << "changed" << key << "from" << entry->value() << "to" << value;
-        #endif
-        entries->value(index)->setValue(value);
+        if(entry->value() != value)
+        {
+            #ifdef DEBUG
+            qDebug() << "changed" << key << "from" << entry->value() << "to" << value;
+            #endif
+            entry->setValue(value);
+        }
     }
     else
     {
@@ -273,8 +276,17 @@ void MainWindow::on_buttonInfoTreeWidget_itemChanged( QTreeWidgetItem *item, int
 
 void MainWindow::on_dataTypeBox_currentIndexChanged(int index)
 {
+    #ifdef DEBUG
     qDebug() << index << ui->dataTypeBox->itemText(index);
+    #endif
     ui->entryTypeBox->clear();
-    ui->entryTypeBox->addItems(ButtonData::getTemplateKeys(ui->dataTypeBox->itemText(index)));
+    QList<QString> entryTypes = ButtonData::getTemplateKeys(ui->dataTypeBox->itemText(index));
+    ui->entryTypeBox->addItems(entryTypes);
+}
+
+
+void MainWindow::on_writeButton_clicked()
+{
+    Util::writeToFile(*ButtonData::allButtonsToJson(), "./output.json");
 }
 

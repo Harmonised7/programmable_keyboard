@@ -40,6 +40,18 @@ QTreeWidgetItem* Entry::toTreeWidgetItem()
     return actionItem;
 }
 
+QJsonObject *Entry::toJson()
+{
+    QJsonObject *json = new QJsonObject;
+    json->insert(TYPE, _type);
+    json->insert(VALUE, _value);
+    QJsonObject *properties = new QJsonObject;
+    for(QString key : _properties->keys())
+        properties->insert(key, _properties->value(key));
+    json->insert(PROPERTIES, *properties);
+    return json;
+}
+
 void Entry::setProperty(const QString &property, const QString &value)
 {
     if( !_properties->contains(property) )

@@ -187,9 +187,9 @@
          </layout>
         </item>
         <item>
-         <widget class="QPushButton" name="updateButton">
+         <widget class="QPushButton" name="writeButton">
           <property name="text">
-           <string>Update</string>
+           <string>Write</string>
           </property>
          </widget>
         </item>
