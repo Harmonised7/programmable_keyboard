@@ -165,9 +165,27 @@ bool MainWindow::isParentOf(QTreeWidgetItem *potentialChild, QTreeWidgetItem *po
     return false;
 }
 
+QString MainWindow::chooseJsonSavePath(QString startPath)
+{
+    return QFileDialog::getSaveFileName(nullptr, "nowo", startPath, jsonFilter, &jsonFilter, QFileDialog::DontUseNativeDialog);
+}
+
+QString MainWindow::chooseJsonReadPath(QString startPath)
+{
+    return QFileDialog::getOpenFileName(nullptr, "nowo", startPath, jsonFilter, &jsonFilter, QFileDialog::DontUseNativeDialog);
+}
+
 ButtonData *MainWindow::getSelectedButtonData()
 {
     return ButtonData::getButtonData(_selectedButtonIndex);
+}
+
+QJsonObject MainWindow::getJsonData()
+{
+    QJsonObject data;
+    data.insert(INFO, QJsonObject());
+    data.insert(BUTTONS, *ButtonData::allButtonsToJson());
+    return data;
 }
 
 void MainWindow::buttonPress()
@@ -287,6 +305,19 @@ void MainWindow::on_dataTypeBox_currentIndexChanged(int index)
 
 void MainWindow::on_writeButton_clicked()
 {
-    Util::writeToFile(*ButtonData::allButtonsToJson(), "./output.json");
+    Util::writeToFile(getJsonData(), "./output.json");
+}
+
+
+void MainWindow::on_actionExport_triggered()
+{
+    Util::writeToFile(getJsonData(), chooseJsonSavePath());
+}
+
+
+void MainWindow::on_actionImport_triggered()
+{
+    QJsonObject json = Util::parseJson(QFile(chooseJsonReadPath())).object();
+
 }
 

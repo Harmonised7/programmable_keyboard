@@ -14,6 +14,7 @@
 #include <QByteArray>
 #include <QFileDialog>
 #include <QFile>
+#include <QMessageBox>
 
 class Util
 {
@@ -26,40 +27,48 @@ public:
         }
     }
 
-    static void writeToFile(QJsonArray json, QString outputPath = "./")
+    static bool writeToFile(QJsonArray json, QString outputPath)
     {
-        writeToFile(QJsonDocument(json), outputPath);
+        return writeToFile(QJsonDocument(json), outputPath);
     }
 
-    static void writeToFile(QJsonObject json, QString outputPath = "./")
+    static bool writeToFile(QJsonObject json, QString outputPath)
     {
-        writeToFile(QJsonDocument(json), outputPath);
+        return writeToFile(QJsonDocument(json), outputPath);
     }
 
-    static void writeToFile(QJsonDocument json, QString outputPath = "./")
+    static bool writeToFile(QJsonDocument json, QString outputPath)
     {
-        writeToFile(json.toJson(), outputPath);
+        return writeToFile(json.toJson(), outputPath);
     }
 
-    static void writeToFile(QByteArray byteArray, QString outputPath = "./")
+    static bool writeToFile(QByteArray byteArray, QString outputPath)
     {
-        if(!outputPath.isEmpty())
+        QFile output(outputPath);
+        if(output.open(QIODevice::WriteOnly | QIODevice::Text))
         {
-            QFile output(outputPath);
-            if(output.open(QIODevice::WriteOnly | QIODevice::Text))
+            output.write(byteArray);
+            output.close();
+            return true;
+        }
+        else
+            QMessageBox::critical(nullptr, "File in use", output.errorString());
+        return false;
+    }
+
+    static QJsonDocument parseJson(QFile file)
+    {
+        if(file.exists())
+        {
+            if(file.open(QIODevice::ReadOnly | QIODevice::Text))
             {
-                output.write(byteArray);
-                output.close();
+                QString jsonString = file.readAll();
+                file.close();
+                return QJsonDocument::fromJson(jsonString.toUtf8());
             }
         }
+        return QJsonDocument();
     }
-
-    static QString chooseFileDir(QString startPath = "./")
-    {
-        return QFileDialog::getSaveFileName(nullptr, "nowo", startPath, jsonFilter, &jsonFilter, QFileDialog::DontUseNativeDialog);
-    }
-
-    inline static QString jsonFilter = "JSON (*.json)";
 
     private:
 };

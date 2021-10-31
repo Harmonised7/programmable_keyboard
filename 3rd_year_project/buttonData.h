@@ -16,7 +16,7 @@ typedef QMap<QString, TemplateEntries*> TemplateEntriesMap;
 class ButtonData
 {
     public:
-        ButtonData( EntryList actions = {} );
+        ButtonData( EntryListMap actions = {} );
 
         //Static methods
         static void init();
@@ -37,7 +37,8 @@ class ButtonData
         EntryList *getEntries(QString dataType);
         Entry *getEntry(QString dataType,  int entryIndex);
 
-        QJsonObject *toJson();
+        QJsonObject toJson();
+        ButtonData fromJson(QJsonObject &jsonButtonData);
 
         //Static fields
 //        inline static const QString MISC = "misc";
@@ -58,6 +59,7 @@ class ButtonData
         //Static methods
         static void addTemplateAction(QString templateType, QString key, QString value, Properties properties = {});
         static void addButtonTemplateActions(QString templateType);
+        static QMap<int, ButtonData*> buttonsDataFromJson(QJsonArray jsonArray);
 };
 
 #endif // ACTIONS_H

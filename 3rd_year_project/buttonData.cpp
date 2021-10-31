@@ -1,14 +1,13 @@
 #include "buttonData.h"
 
-ButtonData::ButtonData( QList<Entry *> actions )
+ButtonData::ButtonData( EntryListMap entryListMap )
 {
     for(QString key : ButtonData::DATA_KEYS)
     {
-        _data->insert(key, new EntryList());
-    }
-    for(Entry *action : actions)
-    {
-        _data->value(ButtonData::PRESS)->push_back(action);
+        if(entryListMap.contains(key))
+            _data->insert(key, entryListMap.value(key));
+        else
+            _data->insert(key, new EntryList());
     }
 }
 /**
@@ -65,7 +64,7 @@ QJsonArray *ButtonData::allButtonsToJson()
 {
     QJsonArray *json = new QJsonArray;
     for(int index : _buttonsDataMap->keys())
-        json->push_back(*getButtonData(index)->toJson());
+        json->push_back(getButtonData(index)->toJson());
     return json;
 }
 
@@ -99,18 +98,23 @@ Entry *ButtonData::getEntry(QString dataType, int entryIndex)
     return getEntries(dataType)->value(entryIndex);
 }
 
-QJsonObject *ButtonData::toJson()
+QJsonObject ButtonData::toJson()
 {
-    QJsonObject *json = new QJsonObject;
+    QJsonObject json;
     for(QString dataKey : DATA_KEYS)
     {
         QJsonArray dataJsonArray;
         for(Entry *entry : *getData(dataKey))
             dataJsonArray.push_back(*entry->toJson());
-        json->insert(dataKey, dataJsonArray);
+        json.insert(dataKey, dataJsonArray);
     }
     return json;
 }
+
+//ButtonData ButtonData::fromJson(QJsonObject &jsonButtonData)
+//{
+//    return
+//}
 
 void ButtonData::addTemplateAction(QString templateType, QString key, QString value, Properties properties)
 {
@@ -134,4 +138,15 @@ void ButtonData::addButtonTemplateActions(QString templateType)
     addTemplateAction( templateType, "move_mouse", "0", { { "x", "100" }, { "y", "100" }, { "speed", "20" } } );
     addTemplateAction( templateType, "drag_mouse", "0", { { "x", "100" }, { "y", "100" }, { "speed", "20" } } );
     addTemplateAction( templateType, "set_mouse", "0", { { "x", "100" }, { "y", "100" } } );
+}
+
+QMap<int, ButtonData *> ButtonData::buttonsDataFromJson(QJsonArray jsonArray)
+{
+    QMap<int, ButtonData *> buttonsData;
+    int i = 0;
+    for(QJsonValueRef ref : jsonArray)
+    {
+        QJsonObject jsonButtonData = ref.toObject();
+        buttonsData.insert()
+    }
 }

@@ -27,10 +27,12 @@ public:
     void updateItemsTree();
     void updateItemsTreeIndices();
     ButtonData *getSelectedButtonData();
-
+    QJsonObject getJsonData();
     QString getDataType(QTreeWidgetItem *item);
     int getEntryIndex(QTreeWidgetItem *item);
     bool isParentOf(QTreeWidgetItem *potentialChild, QTreeWidgetItem *potentialParent);
+    QString chooseJsonSavePath(QString startPath = "./");
+    QString chooseJsonReadPath(QString startPath = "./");
 
 public slots:
     void buttonPress();
@@ -49,10 +51,18 @@ private slots:
 
     void on_writeButton_clicked();
 
-private:
-    Ui::MainWindow *ui;
+    void on_actionExport_triggered();
 
-    // Objects
+    void on_actionImport_triggered();
+
+private:
+    //Fields
+    Ui::MainWindow *ui;
+    inline static const QString BUTTONS = "buttons",
+                                INFO = "info";
+    inline static QString jsonFilter = "JSON (*.json)";
+
+    //Objects
     QList<QPushButton*> _buttons;
     const float _bSize = 100;
     int _selectedButtonIndex = 0;
