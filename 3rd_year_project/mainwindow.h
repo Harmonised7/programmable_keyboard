@@ -55,6 +55,8 @@ private slots:
 
     void on_actionImport_triggered();
 
+    void on_actionClear_triggered();
+
 private:
     //Fields
     Ui::MainWindow *ui;

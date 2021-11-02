@@ -25,13 +25,17 @@ class ButtonData
         static bool hasTemplate(QString dataType, QString type);
         static ButtonData *getButtonData(int buttonIndex);
         static QJsonArray *allButtonsToJson();
+        static QMap<int, ButtonData*> buttonsDataFromJson(QJsonArray jsonArray);
+        static void setButtonData(int buttonIndex, ButtonData *data);
+        static void setButtonsData(QMap<int, ButtonData*> buttonsData);
+        static void wipeButtonsData();
 
         //Methods
         EntryList *getData(QString dataType);
 
-        void addEntry(QString dataType, Entry *action);
+        void addEntry(QString dataType, Entry *entry);
 
-        void delEntry(QString dataType, Entry *action);
+        void delEntry(QString dataType, Entry *entry);
         void delEntry(QString dataType, int entryIndex);
 
         EntryList *getEntries(QString dataType);
@@ -59,7 +63,8 @@ class ButtonData
         //Static methods
         static void addTemplateAction(QString templateType, QString key, QString value, Properties properties = {});
         static void addButtonTemplateActions(QString templateType);
-        static QMap<int, ButtonData*> buttonsDataFromJson(QJsonArray jsonArray);
 };
+
+typedef QMap<int, ButtonData *> ButtonsDataMap;
 
 #endif // ACTIONS_H

@@ -308,6 +308,17 @@ void MainWindow::on_writeButton_clicked()
     Util::writeToFile(getJsonData(), "./output.json");
 }
 
+void MainWindow::on_actionClear_triggered()
+{
+    bool isEmpty = true;
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Clear Data", "This will clear all the buttons. Are you sure you want to proceed?", QMessageBox::Yes|QMessageBox::No);
+    if (reply == QMessageBox::Yes)
+    {
+        ButtonData::wipeButtonsData();
+        updateItemsTree();
+    }
+}
 
 void MainWindow::on_actionExport_triggered()
 {
@@ -318,6 +329,13 @@ void MainWindow::on_actionExport_triggered()
 void MainWindow::on_actionImport_triggered()
 {
     QJsonObject json = Util::parseJson(QFile(chooseJsonReadPath())).object();
-
+    QJsonValue jsonButtonsData = json.value(BUTTONS);
+    if(jsonButtonsData.isArray())
+    {
+        ButtonData::setButtonsData(ButtonData::buttonsDataFromJson(jsonButtonsData.toArray()));
+        updateItemsTree();
+    }
+    else
+        QMessageBox::warning(this, "Invalid JSON", "Invalid JSON structure of selected file.");
 }
 

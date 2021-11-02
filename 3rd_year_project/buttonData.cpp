@@ -15,14 +15,10 @@ ButtonData::ButtonData( EntryListMap entryListMap )
  */
 void ButtonData::init()
 {
-    int buttonCount = Prefs::bCol * Prefs::bRow;
-
+    wipeButtonsData();
     for(QString key : ButtonData::DATA_KEYS)
         _templateEntriesMap->insert(key, new TemplateEntries);
-    for( int i = 0; i < buttonCount; ++i )
-    {
-        _buttonsDataMap->insert( i, new ButtonData() );
-    }
+
 //    addTemplateAction(ButtonData::MISC, "red", "255");
 //    addTemplateAction(ButtonData::MISC, "green", "255");
 //    addTemplateAction(ButtonData::MISC, "blue", "255");
@@ -41,11 +37,11 @@ QList<QString> ButtonData::getTemplateKeys(QString dataType)
 
 Entry *ButtonData::generateTemplateEntry(QString dataType, QString type)
 {
-    Entry *action = _templateEntriesMap->value(dataType)->value( type );
-    Entry *newAction = new Entry( action->type(), action->value() );
-    for( const QString key : action->properties()->keys() )
+    Entry *entry = _templateEntriesMap->value(dataType)->value(type);
+    Entry *newAction = new Entry( entry->type(), entry->value());
+    for(const QString key : entry->properties()->keys())
     {
-        newAction->setProperty( key, action->property(key) );
+        newAction->setProperty(key, entry->property(key));
     }
     return newAction;
 }
@@ -73,14 +69,14 @@ EntryList *ButtonData::getData(QString dataType)
     return _data->value(dataType);
 }
 
-void ButtonData::addEntry(QString dataType, Entry *action)
+void ButtonData::addEntry(QString dataType, Entry *entry)
 {
-    getEntries(dataType)->push_back( action );
+    getEntries(dataType)->push_back(entry);
 }
 
-void ButtonData::delEntry(QString dataType, Entry *action)
+void ButtonData::delEntry(QString dataType, Entry *entry)
 {
-    delEntry(dataType, getEntries(dataType)->indexOf(action));
+    delEntry(dataType, getEntries(dataType)->indexOf(entry));
 }
 
 void ButtonData::delEntry(QString dataType, int entryIndex)
@@ -140,13 +136,55 @@ void ButtonData::addButtonTemplateActions(QString templateType)
     addTemplateAction( templateType, "set_mouse", "0", { { "x", "100" }, { "y", "100" } } );
 }
 
-QMap<int, ButtonData *> ButtonData::buttonsDataFromJson(QJsonArray jsonArray)
+ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonArray jsonButtonsData)
 {
-    QMap<int, ButtonData *> buttonsData;
-    int i = 0;
-    for(QJsonValueRef ref : jsonArray)
+    ButtonsDataMap buttonsData;
+    int buttonIndex = 0;
+    for(const QJsonValueRef jsonButtonDataRef : jsonButtonsData)
     {
-        QJsonObject jsonButtonData = ref.toObject();
-        buttonsData.insert()
+        QJsonObject jsonButtonData = jsonButtonDataRef.toObject();
+        ButtonData *buttonData = new ButtonData;
+        for(const QString dataKey : jsonButtonData.keys())
+        {
+            QJsonArray jsonEntriesList = jsonButtonData.value(dataKey).toArray();
+            for(const QJsonValueRef jsonEntryRef : jsonEntriesList)
+            {
+                QJsonObject jsonEntry = jsonEntryRef.toObject();
+                QString type = jsonEntry.value(Entry::TYPE).toString();
+                QString value = jsonEntry.value(Entry::VALUE).toString();
+                Entry *entry = ButtonData::generateTemplateEntry(dataKey, type);
+                entry->setValue(value);
+                QJsonObject jsonProperties = jsonEntry.value(Entry::PROPERTIES).toObject();
+                for(const QString propertyKey : jsonProperties.keys())
+                    entry->setProperty(propertyKey, jsonProperties.value(propertyKey).toString());
+                buttonData->addEntry(dataKey, entry);
+            }
+        }
+        buttonsData.insert(buttonIndex, buttonData);
+        ++buttonIndex;
+    }
+    return buttonsData;
+}
+
+void ButtonData::setButtonData(int buttonIndex, ButtonData *data)
+{
+    _buttonsDataMap->insert(buttonIndex, data);
+}
+
+void ButtonData::setButtonsData(ButtonsDataMap buttonsData)
+{
+    int i = 0;
+    for(ButtonData *buttonData : buttonsData)
+        setButtonData(i++, buttonData);
+}
+
+void ButtonData::wipeButtonsData()
+{
+    delete _buttonsDataMap;
+    _buttonsDataMap = new ButtonsDataMap;
+    int buttonCount = Prefs::bCol * Prefs::bRow;
+    for(int i = 0; i < buttonCount; ++i)
+    {
+        _buttonsDataMap->insert(i, new ButtonData());
     }
 }

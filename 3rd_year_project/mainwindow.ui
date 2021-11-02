@@ -212,6 +212,7 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionClear"/>
     <addaction name="actionImport"/>
     <addaction name="actionExport"/>
    </widget>
@@ -225,6 +226,11 @@
   <action name="actionExport">
    <property name="text">
     <string>Export</string>
+   </property>
+  </action>
+  <action name="actionClear">
+   <property name="text">
+    <string>Clear</string>
    </property>
   </action>
  </widget>
