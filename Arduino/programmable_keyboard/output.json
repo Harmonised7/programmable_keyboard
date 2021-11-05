@@ -1,0 +1,254 @@
+{
+    "buttons": [
+        {
+            "hold": [
+            ],
+            "press": [
+                {
+                    "properties": {
+                        "speed": "20",
+                        "times": "5"
+                    },
+                    "type": "click",
+                    "value": "0"
+                },
+                {
+                    "properties": {
+                        "speed": "20",
+                        "times": "5"
+                    },
+                    "type": "click",
+                    "value": "0"
+                },
+                {
+                    "properties": {
+                        "speed": "20",
+                        "times": "5"
+                    },
+                    "type": "click",
+                    "value": "0"
+                }
+            ],
+            "release": [
+                {
+                    "properties": {
+                        "speed": "20",
+                        "times": "5"
+                    },
+                    "type": "click",
+                    "value": "Hi Bernard"
+                },
+                {
+                    "properties": {
+                        "speed": "20",
+                        "times": "5"
+                    },
+                    "type": "click",
+                    "value": "0"
+                },
+                {
+                    "properties": {
+                        "speed": "20",
+                        "times": "5"
+                    },
+                    "type": "click",
+                    "value": "0"
+                },
+                {
+                    "properties": {
+                        "speed": "20",
+                        "times": "5"
+                    },
+                    "type": "click",
+                    "value": "0"
+                }
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        },
+        {
+            "hold": [
+            ],
+            "press": [
+            ],
+            "release": [
+            ]
+        }
+    ],
+    "info": {
+    }
+}
