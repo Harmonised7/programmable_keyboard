@@ -1,31 +1,41 @@
-#include <ArduinoJson.h>
+/*
+  3rd year Project, Written by B00125142 Violet Concordia
+*/
 
-#define LED 13
+#include<ArduinoJson.h>
 
-//const String json = "[1, 2, 3, 4, 5]";
-
-const char* input = "{\"key\": \"value\"}";
+#define SERIAL_LENGTH_MAX 65536
 
 void setup()
 {
   Serial.begin(115200);
-  pinMode(LED, OUTPUT);
 }
 
 void loop()
 {
-  
-  if(Serial.available())
+  while(Serial.available())
   {
-    digitalWrite(LED, HIGH);
-    String serialString = Serial.readString();
-    Serial.println(serialString);
+    String inputString = Serial.readString();
+    const int inputLength = inputString.length();
+    char inputChars[inputLength];
+    inputString.toCharArray(inputChars, inputLength);
 
-    DynamicJsonDocument doc(65535);
-    DeserializationError err = deserializeJson(doc, input);
+//    Serial.println(inputString);
+    Serial.println(inputLength);
+//    Serial.println(inputChars);
+    
+    DynamicJsonDocument doc(inputLength);
+    DeserializationError err = deserializeJson(doc, inputChars);
+    if(err)
+    {
+      Serial.print("ERROR: ");
+      Serial.println(err.c_str());
+//      return;
+    }
+
+    inputString.toCharArray(inputChars, inputLength);
+    deserializeJson(doc, inputChars);
 
     serializeJson(doc, Serial);
-    
-    digitalWrite(LED, LOW);
   }
 }
