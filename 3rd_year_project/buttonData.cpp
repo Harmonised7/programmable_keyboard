@@ -56,11 +56,11 @@ ButtonData *ButtonData::getButtonData(int buttonIndex)
     return _buttonsDataMap->value(buttonIndex);
 }
 
-QJsonArray *ButtonData::allButtonsToJson()
+QJsonObject ButtonData::allButtonsToJson()
 {
-    QJsonArray *json = new QJsonArray;
+    QJsonObject json;
     for(int index : _buttonsDataMap->keys())
-        json->push_back(getButtonData(index)->toJson());
+        json.insert(QString::number(index), getButtonData(index)->toJson());
     return json;
 }
 
@@ -182,8 +182,7 @@ void ButtonData::wipeButtonsData()
 {
     delete _buttonsDataMap;
     _buttonsDataMap = new ButtonsDataMap;
-    int buttonCount = Prefs::bCol * Prefs::bRow;
-    for(int i = 0; i < buttonCount; ++i)
+    for(int i = 0; i < Prefs::bCount; ++i)
     {
         _buttonsDataMap->insert(i, new ButtonData());
     }

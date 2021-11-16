@@ -24,7 +24,7 @@ class ButtonData
         static Entry *generateTemplateEntry(QString dataType, QString type);
         static bool hasTemplate(QString dataType, QString type);
         static ButtonData *getButtonData(int buttonIndex);
-        static QJsonArray *allButtonsToJson();
+        static QJsonObject allButtonsToJson();
         static QMap<int, ButtonData*> buttonsDataFromJson(QJsonArray jsonArray);
         static void setButtonData(int buttonIndex, ButtonData *data);
         static void setButtonsData(QMap<int, ButtonData*> buttonsData);

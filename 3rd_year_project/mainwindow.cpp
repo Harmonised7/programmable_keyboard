@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->nameLabel->clear();
 
     //Tell the vector the amount of obects that it will hold
-    _buttons.reserve(Prefs::bRow * Prefs::bCol);
+    _buttons.reserve(Prefs::bCount);
 
     //Populate the buttons
     for( int row = 0; row < Prefs::bRow; ++row )
@@ -183,8 +183,12 @@ ButtonData *MainWindow::getSelectedButtonData()
 QJsonObject MainWindow::getJsonData()
 {
     QJsonObject data;
-    data.insert(INFO, QJsonObject());
-    data.insert(BUTTONS, *ButtonData::allButtonsToJson());
+    QJsonObject info;
+    info.insert("row", Prefs::bRow);
+    info.insert("col", Prefs::bCol);
+//    info.insert("button_count", Prefs::bCount);
+    data.insert(INFO, info);
+    data.insert(BUTTONS, ButtonData::allButtonsToJson());
     return data;
 }
 
