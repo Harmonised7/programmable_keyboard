@@ -15,6 +15,8 @@
 #include <QFileDialog>
 #include <QFile>
 #include <QMessageBox>
+#include <QtSerialPort/QSerialPort>
+#include <QtSerialPort/QSerialPortInfo>
 
 class Util
 {
