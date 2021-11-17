@@ -58,17 +58,22 @@ private slots:
     void on_actionClear_triggered();
 
 private:
-    //Fields
+    //Static Fields
     Ui::MainWindow *ui;
     inline static const QString BUTTONS = "buttons",
                                 INFO = "info";
     inline static QString jsonFilter = "JSON (*.json)";
+    static const quint16 _ARDUINO_UNO_VENDOR_ID = 9025;
+    static const quint16 _ARDUINO_UNO_PRODUCT_ID = 67;
 
-    //Objects
+    //Fields
     QList<QPushButton*> _buttons;
     const float _bSize = 100;
     int _selectedButtonIndex = 0;
     QMap<QString, QTreeWidgetItem*> _treeItemsMap;
+    QSerialPort *_arduino;
+    QString _arduinoPortName;
+    bool _isArduinoAvailable = false;
 
     // Methods
     // ...

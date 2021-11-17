@@ -5,10 +5,10 @@
 #include "buttonData.h"
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow( parent ),
-    ui( new Ui::MainWindow )
+    QMainWindow(parent),
+    ui(new Ui::MainWindow)
 {
-    ui->setupUi( this );
+    ui->setupUi(this);
 
     //Initialize the tree
     initItemTree();
@@ -29,25 +29,27 @@ MainWindow::MainWindow(QWidget *parent) :
     _buttons.reserve(Prefs::bCount);
 
     //Populate the buttons
-    for( int row = 0; row < Prefs::bRow; ++row )
+    for(int row = 0; row < Prefs::bRow; ++row)
     {
-        for( int col = 0; col < Prefs::bCol; ++col )
+        for(int col = 0; col < Prefs::bCol; ++col)
         {
             int index = row*Prefs::bCol + col;
-            QPushButton *button = new QPushButton( "Button " + QString::number( index + 1 ) );
-            button->setMinimumSize( _bSize, _bSize );
-            button->setMaximumSize( _bSize, _bSize );
+            QPushButton *button = new QPushButton("Button " + QString::number(index + 1));
+            button->setMinimumSize(_bSize, _bSize);
+            button->setMaximumSize(_bSize, _bSize);
 
             connect(button, SIGNAL(clicked()), this, SLOT(buttonPress()));
 
             _buttons.emplace(index, button);
-            ui->buttonLayout->addWidget( _buttons[ index ], row, col );
+            ui->buttonLayout->addWidget(_buttons[ index ], row, col);
         }
     }
-    selectButton( _selectedButtonIndex );
+    selectButton(_selectedButtonIndex);
+
+//    _arduino = new QSerialPort;
 
 //    this->window()->adjustSize();
-//    this->window()->setFixedSize( this->window()->size() );
+//    this->window()->setFixedSize(this->window()->size());
 }
 
 MainWindow::~MainWindow()
@@ -61,18 +63,18 @@ MainWindow::~MainWindow()
 void MainWindow::initItemTree()
 {
     ui->buttonInfoTreeWidget->setAlternatingRowColors(true);
-    ui->buttonInfoTreeWidget->setStyleSheet( "alternate-background-color: #dddddd" );
+    ui->buttonInfoTreeWidget->setStyleSheet("alternate-background-color: #dddddd");
 
-    ui->buttonInfoTreeWidget->header()->setVisible( true );
-    ui->buttonInfoTreeWidget->header()->resizeSection( Prefs::numberRow, 10 );
+    ui->buttonInfoTreeWidget->header()->setVisible(true);
+    ui->buttonInfoTreeWidget->header()->resizeSection(Prefs::numberRow, 10);
 
     for(QString key : ButtonData::DATA_KEYS)
     {
         QTreeWidgetItem *treeItem = new QTreeWidgetItem();
-        treeItem->setText( Prefs::keyRow, key );
-        treeItem->setFlags( Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable );
-        ui->buttonInfoTreeWidget->addTopLevelItem( treeItem );
-        treeItem->setExpanded( true );
+        treeItem->setText(Prefs::keyRow, key);
+        treeItem->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
+        ui->buttonInfoTreeWidget->addTopLevelItem(treeItem);
+        treeItem->setExpanded(true);
         _treeItemsMap.insert(key, treeItem);
     }
 }
@@ -82,9 +84,9 @@ void MainWindow::updateItemsTree()
     for(QString dataKey : ButtonData::DATA_KEYS)
     {
         QTreeWidgetItem *treeItem = _treeItemsMap.value(dataKey);
-        Util::clearQTreeWidgetItemChildren( treeItem );
+        Util::clearQTreeWidgetItemChildren(treeItem);
     }
-    if( _selectedButtonIndex >= 0 )
+    if(_selectedButtonIndex >= 0)
     {
         ButtonData *data = getSelectedButtonData();
         #ifdef DEBUG
@@ -95,12 +97,12 @@ void MainWindow::updateItemsTree()
             int i = 0;
             QTreeWidgetItem *treeItem = _treeItemsMap.value(dataKey);
 
-            for( Entry *item : *data->getData(dataKey) )
+            for(Entry *item : *data->getData(dataKey))
             {
                 #ifdef DEBUG
                 qDebug() << "\tLoading" << dataKey << item->type() << item->value() << '|' << item->properties()->size() << "properties";
                 #endif
-                treeItem->addChild( item->toTreeWidgetItem() );
+                treeItem->addChild(item->toTreeWidgetItem());
             }
         }
     }
@@ -109,7 +111,7 @@ void MainWindow::updateItemsTree()
 
 void MainWindow::updateItemsTreeIndices()
 {
-    if( _selectedButtonIndex >= 0 )
+    if(_selectedButtonIndex >= 0)
     {
         for(QString dataKey : ButtonData::DATA_KEYS)
         {
@@ -143,7 +145,7 @@ int MainWindow::getEntryIndex(QTreeWidgetItem *item)
     {
         QTreeWidgetItem *treeItem = _treeItemsMap.value(getDataType(item));
         //Entries can only be in second column
-        if( item->columnCount() > 1 )
+        if(item->columnCount() > 1)
             return treeItem->indexOfChild(item);
         else
             return -1;
@@ -195,21 +197,21 @@ QJsonObject MainWindow::getJsonData()
 void MainWindow::buttonPress()
 {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
-    const int index = _buttons.indexOf( button );
+    const int index = _buttons.indexOf(button);
 
-    selectButton( index );
+    selectButton(index);
 }
 
-void MainWindow::selectButton( int index )
+void MainWindow::selectButton(int index)
 {
-    QPushButton *button = _buttons.value( _selectedButtonIndex );
-    button->setStyleSheet( "" );
+    QPushButton *button = _buttons.value(_selectedButtonIndex);
+    button->setStyleSheet("");
     ui->nameLabel->clear();
 
     _selectedButtonIndex = index;
-    button = _buttons.value( _selectedButtonIndex );
-    button->setStyleSheet( "background-color: green" );
-    ui->nameLabel->setText( button->text() );
+    button = _buttons.value(_selectedButtonIndex);
+    button->setStyleSheet("background-color: green");
+    ui->nameLabel->setText(button->text());
 
     updateItemsTree();
 }
@@ -233,16 +235,16 @@ void MainWindow::on_addActionButton_clicked()
     updateItemsTree();
 }
 
-void MainWindow::on_buttonInfoTreeWidget_itemClicked( QTreeWidgetItem *item, int column )
+void MainWindow::on_buttonInfoTreeWidget_itemClicked(QTreeWidgetItem *item, int column)
 {
-    if( item->parent() && column == Prefs::valueRow )
-        ui->buttonInfoTreeWidget->editItem( item, column );
+    if(item->parent() && column == Prefs::valueRow)
+        ui->buttonInfoTreeWidget->editItem(item, column);
 }
 
 void MainWindow::on_removeActionButton_clicked()
 {
     QList<QTreeWidgetItem*> items = ui->buttonInfoTreeWidget->selectedItems();
-    for( QTreeWidgetItem *item : items )
+    for(QTreeWidgetItem *item : items)
     {
         int index = getEntryIndex(item);
         if(index < 0 && item->parent())
@@ -266,7 +268,7 @@ void MainWindow::on_removeActionButton_clicked()
     updateItemsTreeIndices();
 }
 
-void MainWindow::on_buttonInfoTreeWidget_itemChanged( QTreeWidgetItem *item, int column )
+void MainWindow::on_buttonInfoTreeWidget_itemChanged(QTreeWidgetItem *item, int column)
 {
     QString key = item->text(Prefs::keyRow);
     QString value = item->text(Prefs::valueRow);
@@ -309,7 +311,29 @@ void MainWindow::on_dataTypeBox_currentIndexChanged(int index)
 
 void MainWindow::on_writeButton_clicked()
 {
-    Util::writeToFile(getJsonData(), "./output.json");
+//    Util::writeToFile(getJsonData(), "./output.json");
+    qDebug() << QSerialPortInfo::availablePorts().length();
+
+    _isArduinoAvailable = false;
+    foreach(const QSerialPortInfo &serialPortInfo, QSerialPortInfo::availablePorts())
+    {
+        if(serialPortInfo.hasVendorIdentifier() && serialPortInfo.hasProductIdentifier())
+        {
+            if(serialPortInfo.vendorIdentifier() == _ARDUINO_UNO_VENDOR_ID)
+            {
+                if(serialPortInfo.productIdentifier() == _ARDUINO_UNO_PRODUCT_ID)
+                {
+                    _arduinoPortName = serialPortInfo.portName();
+                    _isArduinoAvailable = true;
+                    break;
+                }
+            }
+        }
+    }
+    if(_isArduinoAvailable)
+        qDebug() << _arduinoPortName << "Detected";
+    else
+        qDebug() << "No Arduino Uno Detected";
 }
 
 void MainWindow::on_actionClear_triggered()
