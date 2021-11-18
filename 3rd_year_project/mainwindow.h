@@ -57,6 +57,8 @@ private slots:
 
     void on_actionClear_triggered();
 
+    void readSerial();
+
 private:
     //Static Fields
     Ui::MainWindow *ui;
@@ -71,11 +73,15 @@ private:
     const float _bSize = 100;
     int _selectedButtonIndex = 0;
     QMap<QString, QTreeWidgetItem*> _treeItemsMap;
+//    QString _arduinoPortName;
+//    bool _isArduinoAvailable = false;
     QSerialPort *_arduino;
-    QString _arduinoPortName;
-    bool _isArduinoAvailable = false;
+    QByteArray _serialData;
+    QString _serialBuffer, _parsedData;
+    int _debugInt = 0;
 
     // Methods
-    // ...
+    void attemptArduinoConnection();
+    void onReadFinished();
 };
 #endif // MAINWINDOW_H

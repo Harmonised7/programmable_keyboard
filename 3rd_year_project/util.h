@@ -31,17 +31,32 @@ public:
 
     static bool writeToFile(QJsonArray json, QString outputPath)
     {
-        return writeToFile(QJsonDocument(json), outputPath);
+        return writeToFile(toByteArray(json), outputPath);
     }
 
     static bool writeToFile(QJsonObject json, QString outputPath)
     {
-        return writeToFile(QJsonDocument(json), outputPath);
+        return writeToFile(toByteArray(json), outputPath);
     }
 
     static bool writeToFile(QJsonDocument json, QString outputPath)
     {
-        return writeToFile(json.toJson(), outputPath);
+        return writeToFile(toByteArray(json), outputPath);
+    }
+
+    static QByteArray toByteArray(QJsonArray json)
+    {
+        return toByteArray(QJsonDocument(json));
+    }
+
+    static QByteArray toByteArray(QJsonObject json)
+    {
+        return toByteArray(QJsonDocument(json));
+    }
+
+    static QByteArray toByteArray(QJsonDocument json)
+    {
+        return json.toJson(QJsonDocument::Compact);
     }
 
     static bool writeToFile(QByteArray byteArray, QString outputPath)

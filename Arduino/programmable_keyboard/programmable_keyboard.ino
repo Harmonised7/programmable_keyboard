@@ -5,23 +5,36 @@
 #include<ArduinoJson.h>
 
 #define SERIAL_LENGTH_MAX 1024
-#define DEBUG
+//#define DEBUG
 
 int rows, cols, buttonCount;
 
+long lastSend;
+
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  DDRB |= (1 << 5);
+  PORTB &= ~(1 << 5);
 }
 
 void loop()
 {
+  if(millis() - lastSend > 1000)
+  {
+    Serial.println("hello");
+    lastSend = millis();
+  }
+  
   while (Serial.available())
   {
+    PORTB |= (1 << 5);
     String inputString = Serial.readString();
     Serial.println("Read in");
     Serial.println(inputString);
     parseAndLoadCharArray(inputString);
+    delay(300);
+    PORTB &= ~(1 << 5);
   }
 }
 
@@ -57,9 +70,9 @@ void parseAndLoadCharArray(const String inputString)
   JsonObject json = doc.as<JsonObject>();
 
   #ifdef DEBUG
-  Serial.println("Read in json:");
-  serializeJson(doc, Serial);
-  Serial.println();
+//  Serial.println("Read in json:");
+//  serializeJson(doc, Serial);
+//  Serial.println();
   #endif
 
   if(doc.containsKey("buttons"))

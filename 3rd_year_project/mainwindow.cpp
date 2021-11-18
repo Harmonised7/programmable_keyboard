@@ -46,7 +46,8 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     selectButton(_selectedButtonIndex);
 
-//    _arduino = new QSerialPort;
+    _arduino = new QSerialPort;
+    attemptArduinoConnection();
 
 //    this->window()->adjustSize();
 //    this->window()->setFixedSize(this->window()->size());
@@ -56,6 +57,9 @@ MainWindow::~MainWindow()
 {
     for (const auto &bt : _buttons)
         delete bt;
+
+    if(_arduino->isOpen())
+        _arduino->close();
 
     delete ui;
 }
@@ -312,28 +316,20 @@ void MainWindow::on_dataTypeBox_currentIndexChanged(int index)
 void MainWindow::on_writeButton_clicked()
 {
 //    Util::writeToFile(getJsonData(), "./output.json");
-    qDebug() << QSerialPortInfo::availablePorts().length();
-
-    _isArduinoAvailable = false;
-    foreach(const QSerialPortInfo &serialPortInfo, QSerialPortInfo::availablePorts())
-    {
-        if(serialPortInfo.hasVendorIdentifier() && serialPortInfo.hasProductIdentifier())
-        {
-            if(serialPortInfo.vendorIdentifier() == _ARDUINO_UNO_VENDOR_ID)
-            {
-                if(serialPortInfo.productIdentifier() == _ARDUINO_UNO_PRODUCT_ID)
-                {
-                    _arduinoPortName = serialPortInfo.portName();
-                    _isArduinoAvailable = true;
-                    break;
-                }
-            }
-        }
-    }
-    if(_isArduinoAvailable)
-        qDebug() << _arduinoPortName << "Detected";
+    if(!_arduino->isOpen())
+        attemptArduinoConnection();
+    if(!_arduino->isOpen())
+        QMessageBox::warning(this, "No Target Device", "Target device not found");
+    else if(!_arduino->isWritable())
+        QMessageBox::warning(this, "Not Writable", "Target device not in Write mode");
     else
-        qDebug() << "No Arduino Uno Detected";
+    {
+        QByteArray command = Util::toByteArray(getJsonData());
+//        qDebug() << "writing" << command;
+        _arduino->write(command.toStdString().c_str());
+//        if(_arduino->bytesAvailable())
+//            qDebug() << _arduino->readAll();
+    }
 }
 
 void MainWindow::on_actionClear_triggered()
@@ -346,6 +342,56 @@ void MainWindow::on_actionClear_triggered()
         ButtonData::wipeButtonsData();
         updateItemsTree();
     }
+}
+
+void MainWindow::attemptArduinoConnection()
+{
+    qDebug() << QSerialPortInfo::availablePorts().length();
+
+//    _isArduinoAvailable = false;
+    foreach(const QSerialPortInfo &serialPortInfo, QSerialPortInfo::availablePorts())
+    {
+        if(serialPortInfo.hasVendorIdentifier() && serialPortInfo.hasProductIdentifier())
+        {
+            if(serialPortInfo.vendorIdentifier() == _ARDUINO_UNO_VENDOR_ID)
+            {
+                if(serialPortInfo.productIdentifier() == _ARDUINO_UNO_PRODUCT_ID)
+                {
+//                    _arduinoPortName = serialPortInfo.portName();
+//                    _isArduinoAvailable = true;
+                    _arduino->setPortName(serialPortInfo.portName());
+                    _arduino->setBaudRate(QSerialPort::Baud115200);
+                    _arduino->open(QSerialPort::ReadWrite);
+                    _arduino->setDataBits(QSerialPort::Data8);
+                    _arduino->setParity(QSerialPort::NoParity);
+                    _arduino->setStopBits(QSerialPort::OneStop);
+                    _arduino->setFlowControl(QSerialPort::NoFlowControl);
+                    QObject::connect(_arduino, SIGNAL(readyRead()), this, SLOT(readSerial()));
+                    break;
+                }
+            }
+        }
+    }
+    if(_arduino->isOpen())
+        qDebug() << _arduino->portName() << " Detected!";
+    else
+        qDebug() << "Arduino Uno Not Found.";
+}
+
+void MainWindow::readSerial()
+{
+    QByteArray receivedData = _arduino->readAll();
+    qDebug() << "Received" << receivedData << ++_debugInt;
+    _serialBuffer.append(receivedData);
+    if(_serialBuffer.endsWith("3ND"))
+        onReadFinished();
+}
+
+void MainWindow::onReadFinished()
+{
+
+    qDebug() << _serialBuffer;
+    _serialBuffer = "";
 }
 
 void MainWindow::on_actionExport_triggered()
