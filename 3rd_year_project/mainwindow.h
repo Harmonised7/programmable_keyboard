@@ -9,6 +9,7 @@
 // Qt includes
 #include <QPushButton>
 #include <QTreeWidgetItem>
+#include <QTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -22,8 +23,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    //Methods
     void initItemTree();
-
     void updateItemsTree();
     void updateItemsTreeIndices();
     ButtonData *getSelectedButtonData();
@@ -59,6 +60,8 @@ private slots:
 
     void readSerial();
 
+    void onReadFinished();
+
 private:
     //Static Fields
     Ui::MainWindow *ui;
@@ -78,10 +81,11 @@ private:
     QSerialPort *_arduino;
     QByteArray _serialData;
     QString _serialBuffer, _parsedData;
-    int _debugInt = 0;
+    int _debugInt = 0, _debugInt2 = 0;
+    int _SERIAL_TIMEOUT = 250;
+    QTimer _serialTimeoutTimer;
 
     // Methods
     void attemptArduinoConnection();
-    void onReadFinished();
 };
 #endif // MAINWINDOW_H

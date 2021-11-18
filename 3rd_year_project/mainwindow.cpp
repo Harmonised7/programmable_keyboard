@@ -48,6 +48,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     _arduino = new QSerialPort;
     attemptArduinoConnection();
+    _serialTimeoutTimer.setSingleShot(true);
 
 //    this->window()->adjustSize();
 //    this->window()->setFixedSize(this->window()->size());
@@ -325,10 +326,7 @@ void MainWindow::on_writeButton_clicked()
     else
     {
         QByteArray command = Util::toByteArray(getJsonData());
-//        qDebug() << "writing" << command;
         _arduino->write(command.toStdString().c_str());
-//        if(_arduino->bytesAvailable())
-//            qDebug() << _arduino->readAll();
     }
 }
 
@@ -367,6 +365,7 @@ void MainWindow::attemptArduinoConnection()
                     _arduino->setStopBits(QSerialPort::OneStop);
                     _arduino->setFlowControl(QSerialPort::NoFlowControl);
                     QObject::connect(_arduino, SIGNAL(readyRead()), this, SLOT(readSerial()));
+                    QObject::connect(&_serialTimeoutTimer, SIGNAL(timeout()), this, SLOT(onReadFinished()));
                     break;
                 }
             }
@@ -380,17 +379,15 @@ void MainWindow::attemptArduinoConnection()
 
 void MainWindow::readSerial()
 {
+    _serialTimeoutTimer.start(_SERIAL_TIMEOUT);
     QByteArray receivedData = _arduino->readAll();
-    qDebug() << "Received" << receivedData << ++_debugInt;
+//    qDebug() << "Received" << receivedData << ++_debugInt;
     _serialBuffer.append(receivedData);
-    if(_serialBuffer.endsWith("3ND"))
-        onReadFinished();
 }
 
 void MainWindow::onReadFinished()
 {
-
-    qDebug() << _serialBuffer;
+    qDebug() << _serialBuffer << ++_debugInt;
     _serialBuffer = "";
 }
 

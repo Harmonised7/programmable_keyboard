@@ -14,31 +14,32 @@ long lastSend;
 void setup()
 {
   Serial.begin(115200);
+  Serial.setTimeout(200);
   DDRB |= (1 << 5);
   PORTB &= ~(1 << 5);
 }
 
 void loop()
 {
-  if(millis() - lastSend > 1000)
-  {
-    Serial.println("hello");
-    lastSend = millis();
-  }
+//  if(millis() - lastSend > 5000)
+//  {
+//    Serial.println("Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of 'de Finibus Bonorum et Malorum' (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, 'Lorem ipsum dolor sit amet..', comes from a line in section 1.10.32.");
+//    lastSend = millis();
+//  }
   
   while (Serial.available())
   {
     PORTB |= (1 << 5);
     String inputString = Serial.readString();
-    Serial.println("Read in");
+//    Serial.println("Read in");/
     Serial.println(inputString);
-    parseAndLoadCharArray(inputString);
+    parseAndLoadStringAsJson(inputString);
     delay(300);
     PORTB &= ~(1 << 5);
   }
 }
 
-void parseAndLoadCharArray(const String inputString)
+void parseAndLoadStringAsJson(const String inputString)
 {
   #ifdef DEBUG
   Serial.println("string");
