@@ -46,9 +46,9 @@ class ButtonData
 
         //Static fields
 //        inline static const QString MISC = "misc";
-        inline static const QString PRESS = "press";
-        inline static const QString HOLD = "hold";
-        inline static const QString RELEASE = "release";
+        inline static const QString PRESS = "p";
+        inline static const QString HOLD = "h";
+        inline static const QString RELEASE = "r";
         inline static const QList<QString> DATA_KEYS = {/*MISC,*/ PRESS, HOLD, RELEASE};
 
     private:
