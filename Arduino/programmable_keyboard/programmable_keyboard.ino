@@ -5,7 +5,8 @@
 #include<ArduinoJson.h>
 
 #define SERIAL_LENGTH_MAX 1024
-//#define DEBUG
+//#define DEBUG_1
+#define DEBUG_2
 
 int rows, cols, buttonCount;
 
@@ -31,8 +32,6 @@ void loop()
   {
     PORTB |= (1 << 5);
     String inputString = Serial.readString();
-//    Serial.println("Read in");/
-    Serial.println(inputString);
     parseAndLoadStringAsJson(inputString);
     delay(300);
     PORTB &= ~(1 << 5);
@@ -41,14 +40,14 @@ void loop()
 
 void parseAndLoadStringAsJson(const String inputString)
 {
-  #ifdef DEBUG
+  #ifdef DEBUG_1
   Serial.println("string");
   Serial.println(inputString);
   #endif
   const int inputLength = inputString.length();
   const char inputChars[inputLength];
   inputString.toCharArray(inputChars, inputLength);
-  #ifdef DEBUG
+  #ifdef DEBUG_2
   Serial.println("chars");
   Serial.println(inputString);
   #endif
@@ -70,35 +69,45 @@ void parseAndLoadStringAsJson(const String inputString)
   deserializeJson(doc, inputChars);
   JsonObject json = doc.as<JsonObject>();
 
-  #ifdef DEBUG
-//  Serial.println("Read in json:");
-//  serializeJson(doc, Serial);
-//  Serial.println();
+  #ifdef DEBUG_1
+  Serial.println("Read in json:");
+  serializeJson(doc, Serial);
+  Serial.println();
   #endif
 
-  if(doc.containsKey("buttons"))
-  {
-    
-    for(JsonPair obj : json)
-    {
-      #ifdef DEBUG
-      Serial.print("parsed button ");
-//      Serial.println(obj.getKey());
-      #endif
-    }
-  }
+  #ifdef DEBUG_2
+  Serial.println("Parsing");
+  #endif
+
   if (doc.containsKey("info"))
   {
     rows = doc["info"].getMember("row").as<int>();
     cols = doc["info"].getMember("col").as<int>();
     buttonCount = rows * cols;
     
-    #ifdef DEBUG
+    #ifdef DEBUG_2
     Serial.println("info parsed");
     #endif
   }
+  
+  if(doc.containsKey("buttons"))
+  {
+    JsonObject buttonsJson = json["buttons"];
+    for(int i = 0; i < buttonCount; i++)
+    {
+      String key = String(i);
+      if(buttonsJson.containsKey(key))
+      {
+        #ifdef DEBUG_2
+        JsonObject buttonJson = buttonsJson[key];
+        Serial.print("parsed button ");
+        Serial.println(i);
+        #endif
+      }
+    }
+  }
 
-  #ifdef DEBUG
+  #ifdef DEBUG_1
   debugPrint();
   #endif
 }
