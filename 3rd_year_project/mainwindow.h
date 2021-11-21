@@ -29,6 +29,7 @@ public:
     void updateItemsTreeIndices();
     ButtonData *getSelectedButtonData();
     QJsonObject getJsonData();
+    QJsonObject getInfoJson();
     QString getDataType(QTreeWidgetItem *item);
     int getEntryIndex(QTreeWidgetItem *item);
     bool isParentOf(QTreeWidgetItem *potentialChild, QTreeWidgetItem *potentialParent);
@@ -82,10 +83,11 @@ private:
     QByteArray _serialData;
     QString _serialBuffer, _parsedData;
     int _debugInt = 0, _debugInt2 = 0;
-    int _SERIAL_TIMEOUT = 250;
+    int _SERIAL_TIMEOUT = 500;
     QTimer _serialTimeoutTimer;
 
     // Methods
     void attemptArduinoConnection();
+    void writeButtonToSerial(int buttonIndex);
 };
 #endif // MAINWINDOW_H

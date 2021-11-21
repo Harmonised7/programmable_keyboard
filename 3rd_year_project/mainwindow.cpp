@@ -190,13 +190,18 @@ ButtonData *MainWindow::getSelectedButtonData()
 QJsonObject MainWindow::getJsonData()
 {
     QJsonObject data;
+    data.insert(INFO, getInfoJson());
+    data.insert(BUTTONS, ButtonData::allButtonsToJson());
+    return data;
+}
+
+QJsonObject MainWindow::getInfoJson()
+{
     QJsonObject info;
     info.insert("row", Prefs::bRow);
     info.insert("col", Prefs::bCol);
-//    info.insert("button_count", Prefs::bCount);
-    data.insert(INFO, info);
-    data.insert(BUTTONS, ButtonData::allButtonsToJson());
-    return data;
+    info.insert(INFO, info);
+    return info;
 }
 
 void MainWindow::buttonPress()
@@ -325,8 +330,13 @@ void MainWindow::on_writeButton_clicked()
         QMessageBox::warning(this, "Not Writable", "Target device not in Write mode");
     else
     {
-        QByteArray command = Util::toByteArray(getJsonData());
+        QByteArray command = Util::toByteArray(getInfoJson());
         _arduino->write(command.toStdString().c_str());
+        for(int i = 0; i < Prefs::bCount; i++)
+        {
+            QTimer::singleShot(i*_SERIAL_TIMEOUT, this, writeButtonToSerial(i));
+            writeButtonToSerial(i);
+        }
     }
 }
 
@@ -377,6 +387,12 @@ void MainWindow::attemptArduinoConnection()
         qDebug() << "Arduino Uno Not Found.";
 }
 
+void MainWindow::writeButtonToSerial(int buttonIndex)
+{
+    QByteArray command = Util::toByteArray(ButtonData::getButtonData(buttonIndex)->toJson());
+    _arduino->write(command.toStdString().c_str());
+}
+
 void MainWindow::readSerial()
 {
     _serialTimeoutTimer.start(_SERIAL_TIMEOUT);
@@ -387,6 +403,7 @@ void MainWindow::readSerial()
 
 void MainWindow::onReadFinished()
 {
+    QMessageBox::information(this, "Serial received", _serialBuffer);
     qDebug() << _serialBuffer << ++_debugInt;
     _serialBuffer = "";
 }
