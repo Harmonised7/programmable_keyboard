@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/programmable_keyboard.iml" filepath="$PROJECT_DIR$/.idea/programmable_keyboard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pro_micro.iml" filepath="$PROJECT_DIR$/.idea/pro_micro.iml" />
     </modules>
   </component>
 </project>
