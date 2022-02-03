@@ -35,15 +35,19 @@ void writeData(uint16_t address, const char data[], int size);
 byte readData(uint16_t address);
 void readData(uint16_t address, byte buffer[], int size);
 void greetEeprom(uint16_t address);
-void saveButtonData(unsigned buttonIndex, const byte data[]);
-void readButtonData(unsigned buttonIndex, byte buffer[], int size);
-void readButtonData(unsigned buttonIndex, byte buffer[]);
-uint16_t readButtonSize(unsigned buttonIndex);
+void saveButtonData(uint8_t buttonIndex, const byte data[]);
+void readButtonData(uint8_t buttonIndex, byte buffer[], int size);
+void readButtonData(uint8_t buttonIndex, byte buffer[]);
+uint16_t readButtonSize(uint8_t buttonIndex);
 void sendHID(const char chars[]);
 void sendHID(const char chars[], uint16_t delay);
 uint16_t getButtonAddress(uint8_t buttonIndex);
-uint16_t getButtonSizeAddress(unsigned buttonIndex);
+uint16_t getButtonSizeAddress(uint8_t buttonIndex);
 uint16_t getStringLength(const char inputChars[]);
+DynamicJsonDocument stringToJsonObject(const char inputChars[]);
+void actionJsonToHID(DynamicJsonDocument &json);
+void buttonJsonToHID(DynamicJsonDocument &json);
+void processButton(uint8_t buttonIndex);
 
 uint16_t merge8To16(uint8_t a, uint8_t b);
 
@@ -73,24 +77,12 @@ void loop()
 
     button = PINF & 1 << 5;
     if(button && !wasButton)
-    {
-        Serial.println("button!");
-        int size = readButtonSize(1);
-        byte hid[size];
-        Serial.println(size);
-        readButtonData(1, hid);
-        sendHID(reinterpret_cast<const char*>(hid), 25);
-    }
+        processButton(0);
     wasButton = button;
 
-    if(lastSend + 1523 < millis())
+    if(lastSend + 6969 < millis())
     {
         Serial.println("I'm alive");
-//        Serial.print("button: ");
-//        Serial.println(button);
-//        Serial.print("analogRead(A2): ");
-//        Serial.println(analogRead(A2));
-//        Serial.println();
         lastSend = millis();
     }
 
@@ -102,7 +94,7 @@ void loop()
         int size = inputString.length()+1;
         char inputChars[size];
         inputString.toCharArray(inputChars, size);
-//        delete &inputString;
+        delete &inputString;
         processSerial(inputChars);
         PORTB &= ~(1 << 5);
     }
@@ -117,82 +109,16 @@ void processSerial(const char inputChars[])
     Serial.print("length: ");
     Serial.println(size);
 #endif
-    saveButtonData(1, reinterpret_cast<const byte*>(inputChars));
-    return;
-    DynamicJsonDocument doc(SERIAL_LENGTH_MAX);
-#ifdef DEBUG_1
-    Serial.print("capacity: ");
-    Serial.println(doc.capacity());
-#endif
-
-    DeserializationError err = deserializeJson(doc, inputChars);
-
-    if (err)
-    {
-        switch (err.code())
-        {
-            case DeserializationError::InvalidInput:
-            case DeserializationError::NoMemory:
-                Serial.print("ERROR: ");
-                Serial.println(err.c_str());
-                return;
-        }
-    }
-    deserializeJson(doc, inputChars);
-    JsonObject json = doc.as<JsonObject>();
-
-#ifdef DEBUG_1
-    Serial.println("Read in json:");
-    serializeJson(doc, Serial);
+    DynamicJsonDocument json = stringToJsonObject(inputChars);
+    delete inputChars;
+    serializeJson(json, Serial);
     Serial.println();
-#endif
-
-#ifdef DEBUG_2
-    Serial.println("Parsing");
-#endif
-
-
-    if(doc.containsKey("i") && doc.containsKey("t"))
+    if(json.containsKey("i"))
     {
-        uint8_t buttonIndex = doc.getMember("i").as<int>();
-        char type = doc.getMember("t").as<byte>();
-        Serial.print("button index: ");
-        Serial.println(buttonIndex);
-        Serial.print("type: ");
-        Serial.println(type);
-        switch(type)
-        {
-            case 'b':
-                Serial.println("Parsing Button!!");
-                break;
-        }
-
-
-#ifdef DEBUG_2
-        Serial.println("info parsed");
-#endif
+        char tidiedJsonChars[SERIAL_LENGTH_MAX];
+        serializeJson(json, tidiedJsonChars);
+        saveButtonData(json["i"], reinterpret_cast<const byte*>(tidiedJsonChars));
     }
-
-//    if(doc.containsKey("buttons"))
-//    {
-//        JsonObject buttonsJson = json["buttons"];
-//        for(int i = 0; i < BUTTON_COUNT; i++)
-//        {
-//            String key = String(i);
-//            if(buttonsJson.containsKey(key))
-//            {
-//                #ifdef DEBUG_2
-//                JsonObject buttonJson = buttonsJson[key];
-//                Serial.print("parsed button ");
-//                Serial.println(i);
-//                #endif
-//            }
-//        }
-//    }
-
-#ifdef DEBUG_1
-    debugPrint();
-#endif
 }
 
 void debugPrint()
@@ -299,27 +225,38 @@ uint16_t getButtonAddress(uint8_t buttonIndex)
     return INFO_OFFSET + buttonIndex*BUTTON_ALLOCATION;
 }
 
-void saveButtonData(unsigned buttonIndex, const byte data[])
+void saveButtonData(uint8_t buttonIndex, const byte data[])
 {
+#ifdef DEBUG_1
+    Serial.print("Saving Button ");
+    Serial.print(buttonIndex);
+    Serial.println(": ");
+    Serial.println(reinterpret_cast<const char *>(data));
+#endif
     int size = (int) getStringLength(reinterpret_cast<const char*>(data));
     writeData(getButtonAddress(buttonIndex), data, size);
     unsigned int buttonSizeAddress = getButtonSizeAddress(buttonIndex);
     //Save button data length as two bytes
-    writeData(buttonSizeAddress, size & 255);
+    writeData(buttonSizeAddress, size & 0xff);
     writeData(buttonSizeAddress+1, size >> 8);
+#ifdef DEBUG_1
+    Serial.print("Button ");
+    Serial.print(buttonIndex);
+    Serial.println(" saved.");
+#endif
 }
 
-void readButtonData(unsigned buttonIndex, byte buffer[], int size)
+void readButtonData(uint8_t buttonIndex, byte buffer[], int size)
 {
     readData(getButtonAddress(buttonIndex), buffer, size);
 }
 
-void readButtonData(unsigned buttonIndex, byte buffer[])
+void readButtonData(uint8_t buttonIndex, byte buffer[])
 {
     readData(getButtonAddress(buttonIndex), buffer, readButtonSize(buttonIndex));
 }
 
-uint16_t readButtonSize(unsigned buttonIndex)
+uint16_t readButtonSize(uint8_t buttonIndex)
 {
     uint16_t address = getButtonSizeAddress(buttonIndex);
     uint16_t readSize = merge8To16(readData(address),
@@ -327,7 +264,7 @@ uint16_t readButtonSize(unsigned buttonIndex)
     return readSize < SERIAL_LENGTH_MAX ? readSize : SERIAL_LENGTH_MAX;
 }
 
-uint16_t getButtonSizeAddress(unsigned buttonIndex)
+uint16_t getButtonSizeAddress(uint8_t buttonIndex)
 {
     return buttonIndex * BUTTON_INFO_SIZE_ALLOCATION;
 }
@@ -335,4 +272,95 @@ uint16_t getButtonSizeAddress(unsigned buttonIndex)
 uint16_t merge8To16(uint8_t a, uint8_t b)
 {
     return a | ((uint16_t) b << 8);
+}
+
+DynamicJsonDocument stringToJsonObject(const char inputChars[])
+{
+    DynamicJsonDocument doc(SERIAL_LENGTH_MAX);
+#ifdef DEBUG_1
+    Serial.print("capacity: ");
+    Serial.println(doc.capacity());
+#endif
+
+    const DeserializationError err = deserializeJson(doc, inputChars);
+    if(err)
+    {
+        switch (err.code())
+        {
+            case DeserializationError::InvalidInput:
+            case DeserializationError::NoMemory:
+                Serial.print("ERROR: ");
+                Serial.println(err.c_str());
+                DynamicJsonDocument json = DynamicJsonDocument(0).as<JsonObject>();
+                return json;
+        }
+    }
+//#ifdef DEBUG_2
+//    Serial.println("stringToJsonObject:");
+//    serializeJson(doc, Serial);
+//    Serial.println();
+//#endif
+    deserializeJson(doc, inputChars);
+    return doc;
+}
+
+void actionJsonToHID(DynamicJsonDocument &json)
+{
+    if(json.containsKey("t"))
+    {
+        const char type = json.getMember("t").as<String>().charAt(0);
+        switch(type)
+        {
+            case 'w':
+                if(json.containsKey("s"))
+                {
+                    delay(1000);
+                    const String str = json.getMember("s").as<String>();
+                    const int keyDelay = json.containsKey("d") ? json.getMember("d").as<int>() : 0;
+                    for(char c : str)
+                    {
+                        if(keyDelay)
+                            delay(keyDelay);
+                        Keyboard.write(c);
+                    }
+                }
+                break;
+
+            case 'k':
+
+                break;
+
+            case 'c':
+
+                break;
+
+            case 'm':
+
+                break;
+        }
+    }
+}
+
+void buttonJsonToHID(DynamicJsonDocument &json)
+{
+    JsonArray actions =  json["a"];
+    for (DynamicJsonDocument action : actions)
+        actionJsonToHID(action);
+}
+
+void processButton(uint8_t buttonIndex)
+{
+    Serial.print("Processing Button ");
+    Serial.println(buttonIndex);
+    uint16_t size = readButtonSize(buttonIndex);
+    Serial.print("size: ");
+    Serial.println(size);
+    byte loadedData[size];
+    readButtonData(buttonIndex, loadedData);
+    Serial.print("loadedData: ");
+    Serial.println(reinterpret_cast<const char*>(loadedData));
+    DynamicJsonDocument json = stringToJsonObject(reinterpret_cast<const char*>(loadedData));
+    serializeJson(json, Serial);
+    Serial.println();
+    buttonJsonToHID(json);
 }
