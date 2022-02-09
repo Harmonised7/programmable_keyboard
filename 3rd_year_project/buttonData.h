@@ -25,10 +25,12 @@ class ButtonData
         static bool hasTemplate(QString dataType, QString type);
         static ButtonData *getButtonData(int buttonIndex);
         static QJsonObject allButtonsToJson();
-        static QMap<int, ButtonData*> buttonsDataFromJson(QJsonArray jsonArray);
+        static QMap<int, ButtonData*> buttonsDataFromJson(QJsonObject jsonArray);
         static void setButtonData(int buttonIndex, ButtonData *data);
         static void setButtonsData(QMap<int, ButtonData*> buttonsData);
         static void wipeButtonsData();
+        static QString getToAlias(QString word);
+        static QString getFromAlias(QString word);
 
         //Methods
         EntryList *getData(QString dataType);
@@ -46,15 +48,17 @@ class ButtonData
 
         //Static fields
 //        inline static const QString MISC = "misc";
-        inline static const QString PRESS = "p";
-        inline static const QString HOLD = "h";
-        inline static const QString RELEASE = "r";
-        inline static const QList<QString> DATA_KEYS = {/*MISC,*/ PRESS, HOLD, RELEASE};
+        inline static const QString PRESS = "press";
+//        inline static const QString HOLD = "hold";
+//        inline static const QString RELEASE = "release";
+        inline static const QList<QString> DATA_KEYS = {/*MISC,*/ PRESS/*, HOLD, RELEASE*/};
 
     private:
         //Static fields
         inline static TemplateEntriesMap *_templateEntriesMap = new TemplateEntriesMap;
         inline static QMap<int, ButtonData*> *_buttonsDataMap = new QMap<int, ButtonData*>;
+        inline static QMap<QString, QString> *_aliasTo = new QMap<QString, QString>;
+        inline static QMap<QString, QString> *_aliasFrom = new QMap<QString, QString>;
 
         //Fields
         EntryListMap *_data = new EntryListMap();
@@ -63,6 +67,8 @@ class ButtonData
         //Static methods
         static void addTemplateAction(QString templateType, QString key, QString value, Properties properties = {});
         static void addButtonTemplateActions(QString templateType);
+        static void registerAlias(QString a, QString b);
+        static void registerAliases();
 };
 
 typedef QMap<int, ButtonData *> ButtonsDataMap;

@@ -43,12 +43,12 @@ QTreeWidgetItem* Entry::toTreeWidgetItem()
 QJsonObject *Entry::toJson()
 {
     QJsonObject *json = new QJsonObject;
-    json->insert(TYPE, _type);
-    json->insert(VALUE, _value);
-    QJsonObject *properties = new QJsonObject;
+    json->insert(ButtonData::getToAlias(TYPE), ButtonData::getToAlias(_type));
+    //The other side assumes value is 0 - do not put 0 if it's 0.
+    if(_value.length() > 1 || _value.at(0) != '0')
+        json->insert(ButtonData::getToAlias(VALUE), _value);
     for(QString key : _properties->keys())
-        properties->insert(key, _properties->value(key));
-    json->insert(PROPERTIES, *properties);
+        json->insert(ButtonData::getToAlias(key), _properties->value(key));
     return json;
 }
 

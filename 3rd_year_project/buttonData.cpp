@@ -23,9 +23,10 @@ void ButtonData::init()
 //    addTemplateAction(ButtonData::MISC, "green", "255");
 //    addTemplateAction(ButtonData::MISC, "blue", "255");
 
+    registerAliases();
     addButtonTemplateActions(ButtonData::PRESS);
-    addButtonTemplateActions(ButtonData::HOLD);
-    addButtonTemplateActions(ButtonData::RELEASE);
+//    addButtonTemplateActions(ButtonData::HOLD);
+//    addButtonTemplateActions(ButtonData::RELEASE);
 }
 
 
@@ -60,7 +61,11 @@ QJsonObject ButtonData::allButtonsToJson()
 {
     QJsonObject json;
     for(int index : _buttonsDataMap->keys())
-        json.insert(QString::number(index), getButtonData(index)->toJson());
+    {
+        QJsonObject buttonJson = getButtonData(index)->toJson();
+        if(buttonJson.value("a").toArray().size() > 0)
+            json.insert(QString::number(index), buttonJson);
+    }
     return json;
 }
 
@@ -97,13 +102,17 @@ Entry *ButtonData::getEntry(QString dataType, int entryIndex)
 QJsonObject ButtonData::toJson()
 {
     QJsonObject json;
-    for(QString dataKey : DATA_KEYS)
-    {
-        QJsonArray dataJsonArray;
-        for(Entry *entry : *getData(dataKey))
-            dataJsonArray.push_back(*entry->toJson());
-        json.insert(dataKey, dataJsonArray);
-    }
+//    for(QString dataKey : DATA_KEYS)
+//    {
+//        QJsonArray dataJsonArray;
+//        for(Entry *entry : *getData(dataKey))
+//            dataJsonArray.push_back(*entry->toJson());
+//        json.insert(dataKey, dataJsonArray);
+//    }
+    QJsonArray dataJsonArray;
+    for(Entry *entry : *getData(PRESS))
+        dataJsonArray.push_back(*entry->toJson());
+    json.insert("a", dataJsonArray);
     return json;
 }
 
@@ -121,47 +130,68 @@ void ButtonData::addButtonTemplateActions(QString templateType)
 {
     addTemplateAction( templateType, "delay", "500" );
 
-    addTemplateAction( templateType, "type", "a sentence", {{ "speed", "20" }} );
+    addTemplateAction( templateType, "write", "a sentence", {{ "delay", "20" }} );
 
     addTemplateAction( templateType, "press", "ENTER", {{ "duration", "50" }} );
     addTemplateAction( templateType, "press_down", "ENTER" );
     addTemplateAction( templateType, "press_up", "ENTER" );
 
-    addTemplateAction( templateType, "click", "0", { { "times", "5" }, { "speed", "20" } } );
+    addTemplateAction( templateType, "click", "0", { { "times", "5" }, { "delay", "20" } } );
     addTemplateAction( templateType, "click_up", "0" );
     addTemplateAction( templateType, "click_down", "0" );
 
-    addTemplateAction( templateType, "move_mouse", "0", { { "x", "100" }, { "y", "100" }, { "speed", "20" } } );
-    addTemplateAction( templateType, "drag_mouse", "0", { { "x", "100" }, { "y", "100" }, { "speed", "20" } } );
+    addTemplateAction( templateType, "move_mouse", "0", { { "x", "100" }, { "y", "100" }, { "delay", "20" } } );
+    addTemplateAction( templateType, "drag_mouse", "0", { { "x", "100" }, { "y", "100" }, { "delay", "20" } } );
     addTemplateAction( templateType, "set_mouse", "0", { { "x", "100" }, { "y", "100" } } );
 }
 
-ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonArray jsonButtonsData)
+void ButtonData::registerAliases()
+{
+    registerAlias("type", "t");
+    registerAlias("write", "w");
+    registerAlias("click", "c");
+    registerAlias("delay", "d");
+    registerAlias("value", "v");
+    registerAlias("times", "x");
+}
+
+void ButtonData::registerAlias(QString a, QString b)
+{
+    _aliasTo->insert(a, b);
+    _aliasFrom->insert(b, a);
+}
+
+QString ButtonData::getToAlias(QString word)
+{
+    return _aliasTo->contains(word) ? _aliasTo->value(word) : word;
+}
+
+QString ButtonData::getFromAlias(QString word)
+{
+    return _aliasFrom->contains(word) ? _aliasFrom->value(word) : word;
+}
+
+ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonObject jsonButtonsData)
 {
     ButtonsDataMap buttonsData;
-    int buttonIndex = 0;
-    for(const QJsonValueRef jsonButtonDataRef : jsonButtonsData)
+    for(int i = 0; i < Prefs::bCount; ++i)
     {
-        QJsonObject jsonButtonData = jsonButtonDataRef.toObject();
+        QJsonObject jsonEntry = jsonButtonsData.value(QString::number(i)).toObject();
+        if(!jsonEntry.contains(ButtonData::getToAlias(Entry::TYPE)))
+            continue;
         ButtonData *buttonData = new ButtonData;
-        for(const QString dataKey : jsonButtonData.keys())
+        QString type = ButtonData::getFromAlias(jsonEntry.value(Entry::TYPE).toString());
+        QString value = jsonEntry.contains(ButtonData::getFromAlias(Entry::VALUE)) ? jsonEntry.value(Entry::VALUE).toString() : 0;
+        Entry *entry = ButtonData::generateTemplateEntry(PRESS, type);
+        entry->setValue(value);
+        for(const QString propertyAlias : jsonEntry.keys())
         {
-            QJsonArray jsonEntriesList = jsonButtonData.value(dataKey).toArray();
-            for(const QJsonValueRef jsonEntryRef : jsonEntriesList)
-            {
-                QJsonObject jsonEntry = jsonEntryRef.toObject();
-                QString type = jsonEntry.value(Entry::TYPE).toString();
-                QString value = jsonEntry.value(Entry::VALUE).toString();
-                Entry *entry = ButtonData::generateTemplateEntry(dataKey, type);
-                entry->setValue(value);
-                QJsonObject jsonProperties = jsonEntry.value(Entry::PROPERTIES).toObject();
-                for(const QString propertyKey : jsonProperties.keys())
-                    entry->setProperty(propertyKey, jsonProperties.value(propertyKey).toString());
-                buttonData->addEntry(dataKey, entry);
-            }
+            QString property = ButtonData::getFromAlias(propertyAlias);
+            if(property != Entry::TYPE && property != Entry::VALUE)
+                entry->setProperty(property, jsonEntry.value(propertyAlias).toString());
         }
-        buttonsData.insert(buttonIndex, buttonData);
-        ++buttonIndex;
+        buttonData->addEntry(PRESS, entry);
+        buttonsData.insert(i, buttonData);
     }
     return buttonsData;
 }

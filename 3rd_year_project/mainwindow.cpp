@@ -334,7 +334,7 @@ void MainWindow::on_writeButton_clicked()
         _arduino->write(command.toStdString().c_str());
         for(int i = 0; i < Prefs::bCount; i++)
         {
-            QTimer::singleShot(i*_SERIAL_TIMEOUT, this, writeButtonToSerial(i));
+            QTimer::singleShot(i*_SERIAL_TIMEOUT, this, SLOT(writeButtonToSerial(i)));
             writeButtonToSerial(i);
         }
     }
@@ -410,7 +410,9 @@ void MainWindow::onReadFinished()
 
 void MainWindow::on_actionExport_triggered()
 {
-    Util::writeToFile(getJsonData(), chooseJsonSavePath());
+    QJsonObject json;
+    json.insert(BUTTONS, ButtonData::allButtonsToJson());
+    Util::writeToFile(json, chooseJsonSavePath());
 }
 
 
@@ -418,9 +420,9 @@ void MainWindow::on_actionImport_triggered()
 {
     QJsonObject json = Util::parseJson(QFile(chooseJsonReadPath())).object();
     QJsonValue jsonButtonsData = json.value(BUTTONS);
-    if(jsonButtonsData.isArray())
+    if(jsonButtonsData.isObject())
     {
-        ButtonData::setButtonsData(ButtonData::buttonsDataFromJson(jsonButtonsData.toArray()));
+        ButtonData::setButtonsData(ButtonData::buttonsDataFromJson(jsonButtonsData.toObject()));
         updateItemsTree();
     }
     else
