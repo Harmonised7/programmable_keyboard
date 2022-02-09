@@ -300,9 +300,9 @@ void actionJsonToHID(DynamicJsonDocument &json)
         switch(type)
         {
             case 'w':   //Handle Write action
-                if(json.containsKey("s"))
+                if(json.containsKey("v"))
                 {
-                    const String str = json.getMember("s").as<String>();
+                    const String str = json.getMember("v").as<String>();
                     const int keyDelay = json.containsKey("d") ? json.getMember("d").as<int>() : 0;
                     for(char c : str)
                     {

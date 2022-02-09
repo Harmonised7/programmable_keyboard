@@ -100,7 +100,6 @@
              </property>
              <property name="font">
               <font>
-               <weight>50</weight>
                <bold>false</bold>
               </font>
              </property>
@@ -195,6 +194,9 @@
         </item>
        </layout>
       </item>
+      <item>
+       <widget class="QTextEdit" name="serialDisplay"/>
+      </item>
      </layout>
     </item>
    </layout>
@@ -205,7 +207,7 @@
      <x>0</x>
      <y>0</y>
      <width>960</width>
-     <height>22</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

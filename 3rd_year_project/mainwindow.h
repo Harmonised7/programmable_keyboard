@@ -72,6 +72,9 @@ private:
     static const quint16 _ARDUINO_UNO_VENDOR_ID = 9025;
     static const quint16 _ARDUINO_UNO_PRODUCT_ID = 67;
 
+    static const quint16 _SPARKFUN_PRO_MICRO_VENDOR_ID = 6991;
+    static const quint16 _SPARKFUN_PRO_MICRO_PRODUCT_ID = 37382;
+
     //Fields
     QList<QPushButton*> _buttons;
     const float _bSize = 100;

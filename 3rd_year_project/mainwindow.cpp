@@ -321,7 +321,6 @@ void MainWindow::on_dataTypeBox_currentIndexChanged(int index)
 
 void MainWindow::on_writeButton_clicked()
 {
-//    Util::writeToFile(getJsonData(), "./output.json");
     if(!_arduino->isOpen())
         attemptArduinoConnection();
     if(!_arduino->isOpen())
@@ -330,12 +329,17 @@ void MainWindow::on_writeButton_clicked()
         QMessageBox::warning(this, "Not Writable", "Target device not in Write mode");
     else
     {
-        QByteArray command = Util::toByteArray(getInfoJson());
-        _arduino->write(command.toStdString().c_str());
-        for(int i = 0; i < Prefs::bCount; i++)
+        for(int buttonIndex = 0; buttonIndex < 1; ++buttonIndex)
         {
-            QTimer::singleShot(i*_SERIAL_TIMEOUT, this, SLOT(writeButtonToSerial(i)));
-            writeButtonToSerial(i);
+            QJsonObject json = ButtonData::getButtonData(buttonIndex)->toJson();
+            json.insert("i", QString::number(buttonIndex));
+            QString outputPath = "./output_";
+            outputPath.append(QString::number(buttonIndex));
+            outputPath.append(".json");
+//            Util::writeToFile(json, outputPath);
+
+            QByteArray command = Util::toByteArray(json);
+            _arduino->write(command.toStdString().c_str());
         }
     }
 }
@@ -361,9 +365,9 @@ void MainWindow::attemptArduinoConnection()
     {
         if(serialPortInfo.hasVendorIdentifier() && serialPortInfo.hasProductIdentifier())
         {
-            if(serialPortInfo.vendorIdentifier() == _ARDUINO_UNO_VENDOR_ID)
+            if(serialPortInfo.vendorIdentifier() == _SPARKFUN_PRO_MICRO_VENDOR_ID)
             {
-                if(serialPortInfo.productIdentifier() == _ARDUINO_UNO_PRODUCT_ID)
+                if(serialPortInfo.productIdentifier() == _SPARKFUN_PRO_MICRO_PRODUCT_ID)
                 {
 //                    _arduinoPortName = serialPortInfo.portName();
 //                    _isArduinoAvailable = true;
@@ -403,8 +407,9 @@ void MainWindow::readSerial()
 
 void MainWindow::onReadFinished()
 {
-    QMessageBox::information(this, "Serial received", _serialBuffer);
-    qDebug() << _serialBuffer << ++_debugInt;
+//    QMessageBox::information(this, "Serial received", _serialBuffer);
+//    qDebug() << _serialBuffer << ++_debugInt;
+    ui->serialDisplay->append(_serialBuffer);
     _serialBuffer = "";
 }
 
