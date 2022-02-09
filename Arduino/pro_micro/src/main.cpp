@@ -9,11 +9,15 @@
 
 #include<Keyboard.h>
 
-#define SERIAL_LENGTH_MAX 512
+#include<MemoryFree.h>
+
+#define SERIAL_LENGTH_MAX 1024
 #define EEPROM_ADDRESS_IC2 0x50
 
 #define DEBUG_1
 #define DEBUG_2
+//#define JSON_ERROR_CHECK
+//#define DYNAMICALLY_OPTIMIZE_JSON
 //#define EEPROM_DEBUG_1
 #define ROWS 4
 #define COLS 6
@@ -28,7 +32,6 @@ unsigned long lastSend;
 boolean button, wasButton;
 
 void processSerial(const char inputChars[]);
-void debugPrint();
 void writeData(uint16_t address, byte data);
 void writeData(uint16_t address, const byte data[], int size);
 void writeData(uint16_t address, const char data[], int size);
@@ -40,7 +43,7 @@ void readButtonData(uint8_t buttonIndex, byte buffer[], int size);
 void readButtonData(uint8_t buttonIndex, byte buffer[]);
 uint16_t readButtonSize(uint8_t buttonIndex);
 void sendHID(const char chars[]);
-void sendHID(const char chars[], uint16_t delay);
+void sendHID(const char chars[], uint16_t gapMs);
 uint16_t getButtonAddress(uint8_t buttonIndex);
 uint16_t getButtonSizeAddress(uint8_t buttonIndex);
 uint16_t getStringLength(const char inputChars[]);
@@ -69,20 +72,14 @@ void setup()
 
 void loop()
 {
-    if(millis() % 5000 == 0)
-    {
-//        readData(0, debugMsg, 8);
-//        Serial.println(millis());
-    }
-
     button = PINF & 1 << 5;
     if(button && !wasButton)
         processButton(0);
     wasButton = button;
 
-    if(lastSend + 6969 < millis())
+    if(lastSend + 4200 < millis())
     {
-        Serial.println("I'm alive");
+        Serial.println(freeMemory());
         lastSend = millis();
     }
 
@@ -93,8 +90,9 @@ void loop()
         String inputString = Serial.readString();
         int size = inputString.length()+1;
         char inputChars[size];
+        //We will be dealing with arrays - convert the string to a char array
         inputString.toCharArray(inputChars, size);
-        delete &inputString;
+        //Further handle the input Serial
         processSerial(inputChars);
         PORTB &= ~(1 << 5);
     }
@@ -103,34 +101,23 @@ void loop()
 void processSerial(const char inputChars[])
 {
 #ifdef DEBUG_2
-    Serial.println("chars:");
-    Serial.println(inputChars);
     int size = getStringLength(inputChars);
-    Serial.print("length: ");
-    Serial.println(size);
 #endif
+    //Parse the Serial input into a json
     DynamicJsonDocument json = stringToJsonObject(inputChars);
-    delete inputChars;
-    serializeJson(json, Serial);
-    Serial.println();
+    Serial.println(freeMemory());
     if(json.containsKey("i"))
     {
+#ifdef DYNAMICALLY_OPTIMIZE_JSON
+        //Free up the memory used by the char array
+        delete inputChars;
         char tidiedJsonChars[SERIAL_LENGTH_MAX];
         serializeJson(json, tidiedJsonChars);
         saveButtonData(json["i"], reinterpret_cast<const byte*>(tidiedJsonChars));
+#else
+        saveButtonData(json["i"], reinterpret_cast<const byte*>(inputChars));
+#endif
     }
-}
-
-void debugPrint()
-{
-//    Serial.print("Count: ");
-//    Serial.println(buttonCount);
-//
-//    Serial.print("Rows: ");
-//    Serial.println(rows);
-//
-//    Serial.print("Cols: ");
-//    Serial.println(cols);
 }
 
 void writeData(uint16_t address, const char data[], int size)
@@ -151,56 +138,60 @@ void writeData(uint16_t address, byte data)
     sprintf(debugMsg, "writing %c to %d", data, address);
     Serial.println(debugMsg);
 #endif
-    greetEeprom(address);
+    greetEeprom(address);   //Tell the EEPROM which address we are dealing with
 
-    Wire.write(data);
-    Wire.endTransmission();
+    Wire.write(data);       //Tell the EEPROM what data we want written to the address
+    Wire.endTransmission(); //Tell EEPROM the command is finished
 
-    delay(5);
+    delay(5);           //Delay 5ms (The datasheet states a write takes a maximum of 5ms)
 }
 
 void readData(uint16_t address, byte buffer[], int size)
 {
-    while(size-- >= 0)
+    while(size-- >= 0)  //For every specified count
+    //Store the read data into the array's pointer's address
+    //And then increment the array's pointer and the address
         *buffer++ = readData(address++);
 }
 
 void readData(uint16_t address, char buffer[], int size)
 {
-    while(size-- >= 0)
+    while(size-- >= 0)  //For every specified count
+    //Store the read data into the array's pointer's address
+    //And then increment the array's pointer and the address
         *buffer++ = (char) readData(address++);
 }
 
 byte readData(uint16_t address)
 {
-    byte data = 0xFF;
-    greetEeprom(address);
-    Wire.endTransmission();
-    Wire.requestFrom(EEPROM_ADDRESS_IC2, 1);
-    data = Wire.read();
-    return data;
+    byte data = 0xFF;                           //Initialize read data as 255
+    greetEeprom(address);                       //Tell EEPROM which piece of address is needed
+    Wire.endTransmission();                     //Tell EEPROM the command is finished
+    Wire.requestFrom(EEPROM_ADDRESS_IC2, 1);    //Request the data specified
+    data = Wire.read();                         //Retrieve the data
+    return data;                                //Return the read data
 }
 
 void greetEeprom(uint16_t address)
 {
-    Wire.beginTransmission(EEPROM_ADDRESS_IC2);
-    Wire.write((int)(address >> 8));   // Most Significant Byte
-    Wire.write((int)(address & 0xff)); // Least Significant Byte
+    Wire.beginTransmission(EEPROM_ADDRESS_IC2);    //Begin Transmission
+    Wire.write((int)(address >> 8));            //Send Most Significant Byte
+    Wire.write((int)(address & 0xff));          //Send Least Significant Byte
 }
 
 uint16_t getStringLength(const char inputChars[])
 {
-    int i = 0;
-    while(inputChars[i] != '\0')
-        ++i;
-    return i;
+    int i = 0;                      //Initialize length at 0
+    while(inputChars[i] != '\0')    //For every item in the array
+        ++i;                        //Increment length
+    return i;                       //Return length
 }
 
 void sendHID(const char chars[])
 {
-    const uint16_t length = getStringLength(chars);
-    for(int i = 0; i < length; ++i)
-        Keyboard.write(chars[i]);
+    const uint16_t length = getStringLength(chars); //Determine length of string
+    for(int i = 0; i < length; ++i)                          //For every char
+        Keyboard.write(chars[i]);                         //Write the char
 }
 
 void sendHID(const char chars[], const uint16_t gapMs)
@@ -209,18 +200,18 @@ void sendHID(const char chars[], const uint16_t gapMs)
     Serial.print("Sending HID: ");
     Serial.println(chars);
 #endif
-    const uint16_t length = getStringLength(chars);
-    for(int i = 0; i < length; ++i)
+    const uint16_t length = getStringLength(chars); //Determine length of string
+    for(int i = 0; i < length; ++i)                          //For every char
     {
-        Keyboard.write(chars[i]);
-        delay(gapMs);
+        Keyboard.write(chars[i]);                          //Write the char
+        delay(gapMs);                                     //Wait specified amount of ms
     }
 }
 
 uint16_t getButtonAddress(uint8_t buttonIndex)
 {
     //Do not allow allocating buttons beyond what the keyboard supports
-    if(buttonIndex > BUTTON_COUNT)
+    if(buttonIndex >= BUTTON_COUNT)
         buttonIndex = BUTTON_COUNT-1;
     return INFO_OFFSET + buttonIndex*BUTTON_ALLOCATION;
 }
@@ -258,10 +249,10 @@ void readButtonData(uint8_t buttonIndex, byte buffer[])
 
 uint16_t readButtonSize(uint8_t buttonIndex)
 {
-    uint16_t address = getButtonSizeAddress(buttonIndex);
-    uint16_t readSize = merge8To16(readData(address),
+    uint16_t address = getButtonSizeAddress(buttonIndex);  //Determine where button size is stored
+    uint16_t readSize = merge8To16(readData(address),   //Read two bytes as one unsigned int16
                                    readData(address + 1));
-    return readSize < SERIAL_LENGTH_MAX ? readSize : SERIAL_LENGTH_MAX;
+    return readSize < SERIAL_LENGTH_MAX ? readSize : SERIAL_LENGTH_MAX; //Return read value, capped at max serial length
 }
 
 uint16_t getButtonSizeAddress(uint8_t buttonIndex)
@@ -277,29 +268,24 @@ uint16_t merge8To16(uint8_t a, uint8_t b)
 DynamicJsonDocument stringToJsonObject(const char inputChars[])
 {
     DynamicJsonDocument doc(SERIAL_LENGTH_MAX);
-#ifdef DEBUG_1
     Serial.print("capacity: ");
     Serial.println(doc.capacity());
-#endif
-
-    const DeserializationError err = deserializeJson(doc, inputChars);
-    if(err)
+#ifdef JSON_ERROR_CHECK
+    DeserializationError jsonError = deserializeJson(doc, inputChars);
+    Serial.println("this?");
+    if(jsonError)
     {
-        switch (err.code())
+        switch (jsonError.code())
         {
             case DeserializationError::InvalidInput:
             case DeserializationError::NoMemory:
                 Serial.print("ERROR: ");
-                Serial.println(err.c_str());
+                Serial.println(jsonError.c_str());
                 DynamicJsonDocument json = DynamicJsonDocument(0).as<JsonObject>();
                 return json;
         }
     }
-//#ifdef DEBUG_2
-//    Serial.println("stringToJsonObject:");
-//    serializeJson(doc, Serial);
-//    Serial.println();
-//#endif
+#endif
     deserializeJson(doc, inputChars);
     return doc;
 }
@@ -309,12 +295,13 @@ void actionJsonToHID(DynamicJsonDocument &json)
     if(json.containsKey("t"))
     {
         const char type = json.getMember("t").as<String>().charAt(0);
+        Serial.print("type: ");
+        Serial.println(type);
         switch(type)
         {
-            case 'w':
+            case 'w':   //Handle Write action
                 if(json.containsKey("s"))
                 {
-                    delay(1000);
                     const String str = json.getMember("s").as<String>();
                     const int keyDelay = json.containsKey("d") ? json.getMember("d").as<int>() : 0;
                     for(char c : str)
@@ -326,15 +313,15 @@ void actionJsonToHID(DynamicJsonDocument &json)
                 }
                 break;
 
-            case 'k':
+            case 'k':   //Handle Key action
 
                 break;
 
-            case 'c':
+            case 'c':   //Handle Click action
 
                 break;
 
-            case 'm':
+            case 'm':   //Handle Mouse Move action
 
                 break;
         }
@@ -343,24 +330,33 @@ void actionJsonToHID(DynamicJsonDocument &json)
 
 void buttonJsonToHID(DynamicJsonDocument &json)
 {
-    JsonArray actions =  json["a"];
-    for (DynamicJsonDocument action : actions)
-        actionJsonToHID(action);
+    JsonArray actions =  json["a"];             //Retrieve list of actions
+    for (DynamicJsonDocument action : actions)  //For every action
+        actionJsonToHID(action);             //Process the action
 }
 
 void processButton(uint8_t buttonIndex)
 {
     Serial.print("Processing Button ");
     Serial.println(buttonIndex);
-    uint16_t size = readButtonSize(buttonIndex);
+
+    uint16_t size = readButtonSize(buttonIndex);    //Determine how much memory is needed to parse the saved data
+
     Serial.print("size: ");
     Serial.println(size);
-    byte loadedData[size];
-    readButtonData(buttonIndex, loadedData);
-    Serial.print("loadedData: ");
-    Serial.println(reinterpret_cast<const char*>(loadedData));
+
+    byte loadedData[size];                          //Allocate memory for the data to be read into
+    readButtonData(buttonIndex, loadedData); //Read the data into the allocated memory
+
+//    Serial.print("loadedData: ");
+//    Serial.println(reinterpret_cast<const char*>(loadedData));
+
+    //Parse the json
     DynamicJsonDocument json = stringToJsonObject(reinterpret_cast<const char*>(loadedData));
+
+    Serial.print("loaded json: ");
     serializeJson(json, Serial);
     Serial.println();
+
     buttonJsonToHID(json);
 }
