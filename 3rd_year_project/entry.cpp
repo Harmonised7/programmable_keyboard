@@ -47,6 +47,34 @@ QJsonObject *Entry::toJson()
     //The other side assumes value is 0 - do not put 0 if it's 0.
     if(_value.length() > 1 || _value.at(0) != '0')
         json->insert(ButtonData::getToAlias(VALUE), _value);
+    QString outValue = "";
+    int length = _value.length();
+    for(int i = 0; i < length; ++i)
+    {
+        QChar c = _value.at(i);
+        if(c != '\\')
+        {
+            outValue.append(c);
+            continue;
+        }
+        else if(i+1 < length)
+        {
+            QChar nextChar = _value.at(i+1);
+            //Handle \n and \t
+            if(nextChar == 'n')
+            {
+                qDebug() << outValue;
+                outValue.append('\n');
+                qDebug() << outValue;
+                ++i;
+            }
+            else if(nextChar == 't')
+            {
+                outValue.append('\t');
+                ++i;
+            }
+        }
+    }
     for(QString key : _properties->keys())
         json->insert(ButtonData::getToAlias(key), _properties->value(key));
     return json;

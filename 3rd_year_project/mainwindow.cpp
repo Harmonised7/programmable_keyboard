@@ -46,6 +46,16 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     selectButton(_selectedButtonIndex);
 
+    //Load backup
+    QJsonObject json = Util::parseJson(QFile("./backup.json")).object();
+    QJsonValue jsonButtonsData = json.value(BUTTONS);
+    if(jsonButtonsData.isObject())
+    {
+        ButtonData::setButtonsData(ButtonData::buttonsDataFromJson(jsonButtonsData.toObject()));
+        updateItemsTree();
+    }
+
+    //Attempt MCU Connection
     _arduino = new QSerialPort;
     attemptArduinoConnection();
     _serialTimeoutTimer.setSingleShot(true);
@@ -56,6 +66,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    //Save backup
+    QJsonObject json;
+    json.insert(BUTTONS, ButtonData::allButtonsToJson());
+    Util::writeToFile(json, "./backup.json");
+
     for (const auto &bt : _buttons)
         delete bt;
 
@@ -388,7 +403,7 @@ void MainWindow::attemptArduinoConnection()
     if(_arduino->isOpen())
         qDebug() << _arduino->portName() << " Detected!";
     else
-        qDebug() << "Arduino Uno Not Found.";
+        qDebug() << "Keyboard DeviceSloooooowPASTEEEEEEEEEEEEEEEEEEEEEEDc Not Found.";
 }
 
 void MainWindow::writeButtonToSerial(int buttonIndex)

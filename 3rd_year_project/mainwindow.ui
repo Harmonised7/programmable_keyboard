@@ -195,7 +195,14 @@
        </layout>
       </item>
       <item>
-       <widget class="QTextEdit" name="serialDisplay"/>
+       <widget class="QTextEdit" name="serialDisplay">
+        <property name="maximumSize">
+         <size>
+          <width>400</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

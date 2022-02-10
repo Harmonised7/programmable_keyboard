@@ -173,24 +173,34 @@ QString ButtonData::getFromAlias(QString word)
 
 ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonObject jsonButtonsData)
 {
+    QString TYPE_ALIAS = ButtonData::getToAlias(Entry::TYPE);
+    QString VALUE_ALIAS = ButtonData::getToAlias(Entry::VALUE);
     ButtonsDataMap buttonsData;
     for(int i = 0; i < Prefs::bCount; ++i)
     {
+        if(!jsonButtonsData.contains(QString::number(i)))
+            continue;
         QJsonObject jsonEntry = jsonButtonsData.value(QString::number(i)).toObject();
-        if(!jsonEntry.contains(ButtonData::getToAlias(Entry::TYPE)))
+        if(!jsonEntry.contains("a"))
             continue;
         ButtonData *buttonData = new ButtonData;
-        QString type = ButtonData::getFromAlias(jsonEntry.value(Entry::TYPE).toString());
-        QString value = jsonEntry.contains(ButtonData::getFromAlias(Entry::VALUE)) ? jsonEntry.value(Entry::VALUE).toString() : 0;
-        Entry *entry = ButtonData::generateTemplateEntry(PRESS, type);
-        entry->setValue(value);
-        for(const QString propertyAlias : jsonEntry.keys())
+        for(QJsonValueRef jsonActionRef : jsonEntry.value("a").toArray())
         {
-            QString property = ButtonData::getFromAlias(propertyAlias);
-            if(property != Entry::TYPE && property != Entry::VALUE)
-                entry->setProperty(property, jsonEntry.value(propertyAlias).toString());
+            QJsonObject jsonAction = jsonActionRef.toObject();
+            if(!jsonAction.contains(TYPE_ALIAS))
+                continue;
+            QString type = ButtonData::getFromAlias(jsonAction.value(TYPE_ALIAS).toString());
+            QString value = jsonAction.contains(VALUE_ALIAS) ? jsonAction.value(VALUE_ALIAS).toString() : 0;
+            Entry *entry = ButtonData::generateTemplateEntry(PRESS, type);
+            entry->setValue(value);
+            for(const QString propertyAlias : jsonAction.keys())
+            {
+                QString property = ButtonData::getFromAlias(propertyAlias);
+                if(property != Entry::TYPE && property != Entry::VALUE)
+                    entry->setProperty(property, jsonAction.value(propertyAlias).toString());
+            }
+            buttonData->addEntry(PRESS, entry);
         }
-        buttonData->addEntry(PRESS, entry);
         buttonsData.insert(i, buttonData);
     }
     return buttonsData;
