@@ -8,6 +8,7 @@
 #include<Wire.h>
 
 #include<Keyboard.h>
+#include<Mouse.h>
 
 #include<MemoryFree.h>
 
@@ -16,6 +17,7 @@
 
 #define DEBUG_1
 #define DEBUG_2
+//#define COUNT_MS
 //#define JSON_ERROR_CHECK
 //#define DYNAMICALLY_OPTIMIZE_JSON
 //#define EEPROM_DEBUG_1
@@ -29,7 +31,7 @@
 //int rows, cols, buttonCount;
 
 unsigned long lastSend;
-boolean button, wasButton;
+boolean button = true, wasButton = true;
 
 void processSerial(const char inputChars[]);
 void writeData(uint16_t address, byte data);
@@ -79,15 +81,16 @@ void loop()
 
     if(lastSend + 4200 < millis())
     {
-        Serial.println(freeMemory());
+        Serial.print(freeMemory());
         lastSend = millis();
     }
 
     while (Serial.available())
     {
         PORTB |= (1 << 5);
-        Serial.println("Why Hello There");
         String inputString = Serial.readString();
+        Serial.println(inputString.length());
+        Serial.println(" Bytes of Data Received...");
         int size = inputString.length()+1;
         char inputChars[size];
         //We will be dealing with arrays - convert the string to a char array
@@ -105,7 +108,6 @@ void processSerial(const char inputChars[])
 #endif
     //Parse the Serial input into a json
     DynamicJsonDocument json = stringToJsonObject(inputChars);
-    Serial.println(freeMemory());
     if(json.containsKey("i"))
     {
 #ifdef DYNAMICALLY_OPTIMIZE_JSON
@@ -231,7 +233,7 @@ void saveButtonData(uint8_t buttonIndex, const byte data[])
     writeData(buttonSizeAddress, size & 0xff);
     writeData(buttonSizeAddress+1, size >> 8);
 #ifdef DEBUG_1
-    Serial.print("Button ");
+    Serial.print("Write was successful. Button ");
     Serial.print(buttonIndex);
     Serial.println(" saved.");
 #endif
@@ -268,8 +270,10 @@ uint16_t merge8To16(uint8_t a, uint8_t b)
 DynamicJsonDocument stringToJsonObject(const char inputChars[])
 {
     DynamicJsonDocument doc(SERIAL_LENGTH_MAX);
-    Serial.print("capacity: ");
-    Serial.println(doc.capacity());
+//    Serial.print("capacity: ");
+//    Serial.println(doc.capacity());
+    if(doc.capacity() == 0)
+        Serial.println("ERROR: 0 capacity json, ran out of memory!");
 #ifdef JSON_ERROR_CHECK
     DeserializationError jsonError = deserializeJson(doc, inputChars);
     Serial.println("this?");
@@ -300,6 +304,7 @@ void actionJsonToHID(DynamicJsonDocument &json)
         switch(type)
         {
             case 'w':   //Handle Write action
+            {
                 if(json.containsKey("v"))
                 {
                     const String str = json.getMember("v").as<String>();
@@ -312,14 +317,58 @@ void actionJsonToHID(DynamicJsonDocument &json)
                     }
                 }
                 break;
+            }
 
             case 'k':   //Handle Key action
-
+            {
+                if(json.containsKey("v"))
+                {
+                    const int key = json.getMember("v").as<int>();
+                    Keyboard.press(key);
+                    if(json.containsKey("d"))
+                        delay(json.getMember("d").as<int>());
+                    Keyboard.release(key);
+                }
+            }
                 break;
 
             case 'c':   //Handle Click action
+            {
+                char mouseButton = MOUSE_LEFT;
+                int times = 1;
+                int clickDelay = 0;
+                if(json.containsKey("v"))
+                {
+                    const String str = json.getMember("v").as<String>();
+                    if(str.length() > 0)
+                    {
+                        switch(str.charAt(0))
+                        {
+                            case '1':
+                                mouseButton = MOUSE_RIGHT;
+                                break;
 
+                            case '2':
+                                mouseButton = MOUSE_MIDDLE;
+                                break;
+                        }
+                    }
+                }
+                if(json.containsKey("x"))
+                    times = json.getMember("x").as<int>();
+                if(json.containsKey("d"))
+                    clickDelay = json.getMember("d").as<int>();
+                if(times < 1)
+                    times = 1;
+                while(times-- > 0)
+                {
+                    Mouse.begin();
+                    Mouse.click(mouseButton);
+                    delay(clickDelay);
+                    Mouse.end();
+                }
                 break;
+            }
 
             case 'm':   //Handle Mouse Move action
 
@@ -337,26 +386,45 @@ void buttonJsonToHID(DynamicJsonDocument &json)
 
 void processButton(uint8_t buttonIndex)
 {
-    Serial.print("Processing Button ");
-    Serial.println(buttonIndex);
+//    Serial.print("Processing Button ");
+//    Serial.println(buttonIndex);
 
+#ifdef COUNT_MS
+    unsigned long startMicros = micros();
+#endif
     uint16_t size = readButtonSize(buttonIndex);    //Determine how much memory is needed to parse the saved data
-
-    Serial.print("size: ");
-    Serial.println(size);
-
+//    Serial.print("size: ");
+//    Serial.println(size);
     byte loadedData[size];                          //Allocate memory for the data to be read into
     readButtonData(buttonIndex, loadedData); //Read the data into the allocated memory
+
+
 
 //    Serial.print("loadedData: ");
 //    Serial.println(reinterpret_cast<const char*>(loadedData));
 
     //Parse the json
+
+#ifdef COUNT_MS
+    Serial.print("data read ms: ");
+    Serial.println(((float)micros()-(float)startMicros)/(float)1000.0);
+    startMicros = micros();
+#endif
     DynamicJsonDocument json = stringToJsonObject(reinterpret_cast<const char*>(loadedData));
 
-    Serial.print("loaded json: ");
-    serializeJson(json, Serial);
-    Serial.println();
 
+//    Serial.print("loaded json: ");
+//    serializeJson(json, Serial);
+//    Serial.println();
+
+#ifdef COUNT_MS
+    Serial.print("json parse ms: ");
+    Serial.println(((float)micros()-(float)startMicros)/(float)1000.0);
+    startMicros = micros();
+#endif
     buttonJsonToHID(json);
+#ifdef COUNT_MS
+    Serial.print("HID send ms: ");
+    Serial.println(((float)micros()-(float)startMicros)/(float)1000.0);
+#endif
 }

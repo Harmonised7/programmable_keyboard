@@ -62,6 +62,12 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="minimumSize">
+             <size>
+              <width>400</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="horizontalScrollBarPolicy">
              <enum>Qt::ScrollBarAsNeeded</enum>
             </property>
@@ -186,6 +192,13 @@
          </layout>
         </item>
         <item>
+         <widget class="QCheckBox" name="sendEmptyCheckBox">
+          <property name="text">
+           <string>Send empty buttons</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="writeButton">
           <property name="text">
            <string>Write</string>
@@ -195,12 +208,24 @@
        </layout>
       </item>
       <item>
-       <widget class="QTextEdit" name="serialDisplay">
+       <widget class="QTextEdit" name="outputTextBox">
+        <property name="minimumSize">
+         <size>
+          <width>400</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>400</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="markdown">
+         <string/>
         </property>
        </widget>
       </item>

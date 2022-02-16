@@ -31,6 +31,8 @@ class ButtonData
         static void wipeButtonsData();
         static QString getToAlias(QString word);
         static QString getFromAlias(QString word);
+        static int getToAsciiAlias(QString word);
+        static QString getFromAsciiAlias(int ascii);
 
         //Methods
         EntryList *getData(QString dataType);
@@ -57,8 +59,11 @@ class ButtonData
         //Static fields
         inline static TemplateEntriesMap *_templateEntriesMap = new TemplateEntriesMap;
         inline static QMap<int, ButtonData*> *_buttonsDataMap = new QMap<int, ButtonData*>;
-        inline static QMap<QString, QString> *_aliasTo = new QMap<QString, QString>;
-        inline static QMap<QString, QString> *_aliasFrom = new QMap<QString, QString>;
+        inline static QMap<QString, QString> *_aliasToMap = new QMap<QString, QString>;
+        inline static QMap<QString, QString> *_aliasFromMap = new QMap<QString, QString>;
+
+        inline static QMap<int, QString> *_asciiToWordMap = new QMap<int, QString>;
+        inline static QMap<QString, int> *_wordToAsciiMap = new QMap<QString, int>;
 
         //Fields
         EntryListMap *_data = new EntryListMap();
@@ -68,6 +73,7 @@ class ButtonData
         static void addTemplateAction(QString templateType, QString key, QString value, Properties properties = {});
         static void addButtonTemplateActions(QString templateType);
         static void registerAlias(QString a, QString b);
+        static void registerAsciiAlias(int a, QString b);
         static void registerAliases();
 };
 

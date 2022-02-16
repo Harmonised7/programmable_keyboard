@@ -39,6 +39,8 @@ QList<QString> ButtonData::getTemplateKeys(QString dataType)
 Entry *ButtonData::generateTemplateEntry(QString dataType, QString type)
 {
     Entry *entry = _templateEntriesMap->value(dataType)->value(type);
+    if(entry == nullptr)
+        return nullptr;
     Entry *newAction = new Entry( entry->type(), entry->value());
     for(const QString key : entry->properties()->keys())
     {
@@ -132,9 +134,9 @@ void ButtonData::addButtonTemplateActions(QString templateType)
 
     addTemplateAction( templateType, "write", "a sentence", {{ "delay", "20" }} );
 
-    addTemplateAction( templateType, "press", "ENTER", {{ "duration", "50" }} );
-    addTemplateAction( templateType, "press_down", "ENTER" );
-    addTemplateAction( templateType, "press_up", "ENTER" );
+    addTemplateAction( templateType, "key", "enter", {{ "delay", "50" }, { "times", "1" }} );
+    addTemplateAction( templateType, "key_down", "enter" );
+    addTemplateAction( templateType, "key_up", "enter" );
 
     addTemplateAction( templateType, "click", "0", { { "times", "5" }, { "delay", "20" } } );
     addTemplateAction( templateType, "click_up", "0" );
@@ -153,22 +155,59 @@ void ButtonData::registerAliases()
     registerAlias("delay", "d");
     registerAlias("value", "v");
     registerAlias("times", "x");
+    registerAlias("key", "k");
+    registerAlias("key_up", "ku");
+    registerAlias("key_down", "kd");
+
+    registerAsciiAlias(128, "ctrl");
+    registerAsciiAlias(129, "shift");
+    registerAsciiAlias(130, "alt");
+    registerAsciiAlias(215, "right");
+    registerAsciiAlias(216, "left");
+    registerAsciiAlias(217, "down");
+    registerAsciiAlias(218, "up");
+    registerAsciiAlias(176, "enter");
+    registerAsciiAlias(179, "tab");
+    registerAsciiAlias(193, "caps_lock");
+    registerAsciiAlias(209, "insert");
+    registerAsciiAlias(210, "home");
+    registerAsciiAlias(212, "delete");
+    registerAsciiAlias(211, "page_up");
+    registerAsciiAlias(213, "end");
+    registerAsciiAlias(214, "page_down");
 }
 
 void ButtonData::registerAlias(QString a, QString b)
 {
-    _aliasTo->insert(a, b);
-    _aliasFrom->insert(b, a);
+    _aliasToMap->insert(a, b);
+    _aliasFromMap->insert(b, a);
+}
+
+void ButtonData::registerAsciiAlias(int a, QString b)
+{
+    _asciiToWordMap->insert(a, b.toLower());
+    _wordToAsciiMap->insert(b.toLower(), a);
 }
 
 QString ButtonData::getToAlias(QString word)
 {
-    return _aliasTo->contains(word) ? _aliasTo->value(word) : word;
+    return _aliasToMap->contains(word) ? _aliasToMap->value(word) : word;
 }
 
 QString ButtonData::getFromAlias(QString word)
 {
-    return _aliasFrom->contains(word) ? _aliasFrom->value(word) : word;
+    return _aliasFromMap->contains(word) ? _aliasFromMap->value(word) : word;
+}
+
+int ButtonData::getToAsciiAlias(QString word)
+{
+    word = word.toLower();
+    return _wordToAsciiMap->contains(word) ? _wordToAsciiMap->value(word) : word.toInt();
+}
+
+QString ButtonData::getFromAsciiAlias(int ascii)
+{
+    return _asciiToWordMap->contains(ascii) ? _asciiToWordMap->value(ascii).toLower() : QString::number(ascii);
 }
 
 ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonObject jsonButtonsData)
@@ -190,9 +229,23 @@ ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonObject jsonButtonsData)
             if(!jsonAction.contains(TYPE_ALIAS))
                 continue;
             QString type = ButtonData::getFromAlias(jsonAction.value(TYPE_ALIAS).toString());
-            QString value = jsonAction.contains(VALUE_ALIAS) ? jsonAction.value(VALUE_ALIAS).toString() : 0;
             Entry *entry = ButtonData::generateTemplateEntry(PRESS, type);
-            entry->setValue(value);
+            if(entry == nullptr)
+            {
+                qDebug() << "Invalid button type while parsing json" << type;
+                continue;
+            }
+            if(type == "key" || type == "key_down" || type == "key_up")
+            {
+                QString test = getFromAsciiAlias(jsonAction.value(VALUE_ALIAS).toInt());
+                QString value = jsonAction.contains(VALUE_ALIAS) ? test : 0;
+                entry->setValue(value);
+            }
+            else
+            {
+                QString value = jsonAction.contains(VALUE_ALIAS) ? jsonAction.value(VALUE_ALIAS).toString() : 0;
+                entry->setValue(value);
+            }
             for(const QString propertyAlias : jsonAction.keys())
             {
                 QString property = ButtonData::getFromAlias(propertyAlias);
