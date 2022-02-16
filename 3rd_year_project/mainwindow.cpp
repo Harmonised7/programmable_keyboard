@@ -59,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent) :
     _arduino = new QSerialPort;
     attemptArduinoConnection();
     _serialTimeoutTimer.setSingleShot(true);
+    _sendQueuedSerialTimer.setSingleShot(true);
 
 //    this->window()->adjustSize();
 //    this->window()->setFixedSize(this->window()->size());
@@ -140,6 +141,14 @@ void MainWindow::updateItemsTreeIndices()
                 tree->child(i)->setText(Prefs::numberRow, QString::number(i+1));
         }
     }
+}
+
+void MainWindow::print(QString string)
+{
+    ui->outputTextBox->moveCursor(QTextCursor::End);
+    ui->outputTextBox->insertPlainText(string);
+    ui->outputTextBox->moveCursor(QTextCursor::End);
+    qDebug() << string;
 }
 
 QString MainWindow::getDataType(QTreeWidgetItem *item)
@@ -339,23 +348,41 @@ void MainWindow::on_writeButton_clicked()
     if(!_arduino->isOpen())
         attemptArduinoConnection();
     if(!_arduino->isOpen())
-        QMessageBox::warning(this, "No Target Device", "Target device not found");
+    {
+        print("Error: Target device not found!");
+        QMessageBox::warning(this, "No Target Device", "Target device not found!");
+    }
     else if(!_arduino->isWritable())
-        QMessageBox::warning(this, "Not Writable", "Target device not in Write mode");
+    {
+        print("Error: Target device not in Write mode!");
+        QMessageBox::warning(this, "Not Writable", "Target device not in Write mode!");
+    }
     else
     {
-        for(int buttonIndex = 0; buttonIndex < 1; ++buttonIndex)
+        //Clear previously queued serial if any was still not send
+        _queuedSerialToSend.clear();
+        //For each button, queue write
+        for(int buttonIndex = 0; buttonIndex < Prefs::bCount; ++buttonIndex)
         {
-            QJsonObject json = ButtonData::getButtonData(buttonIndex)->toJson();
+            ButtonData *buttonData = ButtonData::getButtonData(buttonIndex);
+            if(!ui->sendEmptyCheckBox->checkState() && buttonData->getEntries(ButtonData::PRESS)->length() == 0)
+                continue;
+            QJsonObject json = buttonData->toJson();
+            //Insert an index value so the MCU knows which button the data belongs to
             json.insert("i", QString::number(buttonIndex));
-            QString outputPath = "./output_";
-            outputPath.append(QString::number(buttonIndex));
-            outputPath.append(".json");
+
+//            QString outputPath = "./output_";
+//            outputPath.append(QString::number(buttonIndex));
+//            outputPath.append(".json");
 //            Util::writeToFile(json, outputPath);
 
-            QByteArray command = Util::toByteArray(json);
-            _arduino->write(command.toStdString().c_str());
+            _queuedSerialToSend.push_back(Util::toByteArray(json));
+            _serialTimeoutTimer.start(_SERIAL_WRITE_TIMEOUT);
+
+//            QByteArray command = Util::toByteArray(json);
+//            print("Writing button " + QString::number(buttonIndex) + "...\n");
         }
+        writeQueuedSerial();
     }
 }
 
@@ -395,6 +422,7 @@ void MainWindow::attemptArduinoConnection()
                     _arduino->setFlowControl(QSerialPort::NoFlowControl);
                     QObject::connect(_arduino, SIGNAL(readyRead()), this, SLOT(readSerial()));
                     QObject::connect(&_serialTimeoutTimer, SIGNAL(timeout()), this, SLOT(onReadFinished()));
+                    QObject::connect(&_sendQueuedSerialTimer, SIGNAL(timeout()), this, SLOT(writeQueuedSerial()));
                     break;
                 }
             }
@@ -403,7 +431,7 @@ void MainWindow::attemptArduinoConnection()
     if(_arduino->isOpen())
         qDebug() << _arduino->portName() << " Detected!";
     else
-        qDebug() << "Keyboard DeviceSloooooowPASTEEEEEEEEEEEEEEEEEEEEEEDc Not Found.";
+        qDebug() << "Keyboard Device Not Found.";
 }
 
 void MainWindow::writeButtonToSerial(int buttonIndex)
@@ -412,19 +440,41 @@ void MainWindow::writeButtonToSerial(int buttonIndex)
     _arduino->write(command.toStdString().c_str());
 }
 
+void MainWindow::writeQueuedSerial()
+{
+    qDebug() << "Length" << _queuedSerialToSend.length();
+    if(_queuedSerialToSend.length() > 0)
+    {
+        qDebug() << "Sending from queue";
+        _arduino->write(_queuedSerialToSend.at(0).toStdString().c_str());
+        _queuedSerialToSend.removeFirst();
+        _sendQueuedSerialTimer.start(_SERIAL_WRITE_TIMEOUT);
+    }
+    else
+    {
+        QMessageBox::information(this, "Success", "All buttons written!");
+        qDebug() << "Queue is finished";
+    }
+}
+
 void MainWindow::readSerial()
 {
-    _serialTimeoutTimer.start(_SERIAL_TIMEOUT);
+    _serialTimeoutTimer.start(_SERIAL_READ_TIMEOUT);
     QByteArray receivedData = _arduino->readAll();
-//    qDebug() << "Received" << receivedData << ++_debugInt;
-    _serialBuffer.append(receivedData);
+    print("K: " + receivedData + '\n');
+    if(receivedData.contains("Write was successful."))
+    {
+        print("Confirmation received");
+        _sendQueuedSerialTimer.stop();
+        writeQueuedSerial();
+    }
 }
 
 void MainWindow::onReadFinished()
 {
 //    QMessageBox::information(this, "Serial received", _serialBuffer);
 //    qDebug() << _serialBuffer << ++_debugInt;
-    ui->serialDisplay->append(_serialBuffer);
+    //If MCU acknowledged a successful write, send next button immediately
     _serialBuffer = "";
 }
 

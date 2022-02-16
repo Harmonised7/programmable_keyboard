@@ -27,6 +27,7 @@ public:
     void initItemTree();
     void updateItemsTree();
     void updateItemsTreeIndices();
+    void print(QString string);
     ButtonData *getSelectedButtonData();
     QJsonObject getJsonData();
     QJsonObject getInfoJson();
@@ -63,19 +64,22 @@ private slots:
 
     void onReadFinished();
 
+    void writeQueuedSerial();
+
 private:
     //Static Fields
     Ui::MainWindow *ui;
-    inline static const QString BUTTONS = "buttons",
-                                INFO = "info";
-    inline static QString jsonFilter = "JSON (*.json)";
-    static const quint16 _ARDUINO_UNO_VENDOR_ID = 9025;
-    static const quint16 _ARDUINO_UNO_PRODUCT_ID = 67;
+    const QString BUTTONS = "buttons",
+                  INFO = "info";
+    QString jsonFilter = "JSON (*.json)";
+    const quint16 _ARDUINO_UNO_VENDOR_ID = 9025;
+    const quint16 _ARDUINO_UNO_PRODUCT_ID = 67;
 
-    static const quint16 _SPARKFUN_PRO_MICRO_VENDOR_ID = 6991;
-    static const quint16 _SPARKFUN_PRO_MICRO_PRODUCT_ID = 37382;
+    const quint16 _SPARKFUN_PRO_MICRO_VENDOR_ID = 6991;
+    const quint16 _SPARKFUN_PRO_MICRO_PRODUCT_ID = 37382;
 
     //Fields
+    QList<QByteArray> _queuedSerialToSend;
     QList<QPushButton*> _buttons;
     const float _bSize = 100;
     int _selectedButtonIndex = 0;
@@ -86,8 +90,10 @@ private:
     QByteArray _serialData;
     QString _serialBuffer, _parsedData;
     int _debugInt = 0, _debugInt2 = 0;
-    int _SERIAL_TIMEOUT = 500;
+    int _SERIAL_READ_TIMEOUT = 500;
+    int _SERIAL_WRITE_TIMEOUT = 1000;
     QTimer _serialTimeoutTimer;
+    QTimer _sendQueuedSerialTimer;
 
     // Methods
     void attemptArduinoConnection();
