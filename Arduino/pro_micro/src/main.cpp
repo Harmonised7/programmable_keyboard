@@ -28,8 +28,6 @@
 #define INFO_OFFSET BUTTON_INFO_SIZE_ALLOCATION*BUTTON_COUNT
 #define BUTTON_ALLOCATION 2096
 
-//int rows, cols, buttonCount;
-
 unsigned long lastSend;
 boolean button = true, wasButton = true;
 
@@ -53,6 +51,22 @@ DynamicJsonDocument stringToJsonObject(const char inputChars[]);
 void actionJsonToHID(DynamicJsonDocument &json);
 void buttonJsonToHID(DynamicJsonDocument &json);
 void processButton(uint8_t buttonIndex);
+void setSRInput(boolean value);
+void clockSR();
+void clockSROut();
+
+void setBit(volatile uint8_t *byte, uint8_t bit, bool value);
+void setBit(uint8_t *byte, uint8_t bit, bool value);
+void setBitHigh(volatile uint8_t *byte, uint8_t bit);
+void setBitHigh(uint8_t *byte, uint8_t bit);
+void setBitLow(volatile uint8_t *byte, uint8_t bit);
+void setBitLow(uint8_t *byte, uint8_t bit);
+void toggleBit(volatile uint8_t *byte, uint8_t bit);
+void toggleBit(uint8_t *byte, uint8_t bit);
+void setSR(uint8_t value);
+void selectButtonSR(uint8_t column, uint8_t row);
+
+double log(double base, double value);
 
 uint16_t merge8To16(uint8_t a, uint8_t b);
 
@@ -66,7 +80,15 @@ void setup()
     Wire.begin();
 //    writeData(0, "32511523", 8);
 
-    DDRF |= (1 << 5);
+    //Set SER as output
+    setBitHigh(&DDRB, 4);
+    //Set SRCLK as output
+    setBitHigh(&DDRE, 6);
+    //Set RCLK as output
+    setBitHigh(&DDRD, 4);
+    //Sed LED as output
+    setBitHigh(&DDRF, 5);
+//    DDRF |= (1 << 5);
 //    PORTB &= ~(1 << 2);
 
 //    pinMode(A10, INPUT);
@@ -74,6 +96,14 @@ void setup()
 
 void loop()
 {
+    for(uint8_t i = 0; i < 4; ++i)
+    {
+        selectButtonSR(0, i);
+        delay(100);
+    }
+
+    return;
+
     button = PINF & 1 << 5;
     if(button && !wasButton)
         processButton(0);
@@ -228,7 +258,7 @@ void saveButtonData(uint8_t buttonIndex, const byte data[])
 #endif
     int size = (int) getStringLength(reinterpret_cast<const char*>(data));
     writeData(getButtonAddress(buttonIndex), data, size);
-    unsigned int buttonSizeAddress = getButtonSizeAddress(buttonIndex);
+    uint8_t buttonSizeAddress = getButtonSizeAddress(buttonIndex);
     //Save button data length as two bytes
     writeData(buttonSizeAddress, size & 0xff);
     writeData(buttonSizeAddress+1, size >> 8);
@@ -252,7 +282,7 @@ void readButtonData(uint8_t buttonIndex, byte buffer[])
 uint16_t readButtonSize(uint8_t buttonIndex)
 {
     uint16_t address = getButtonSizeAddress(buttonIndex);  //Determine where button size is stored
-    uint16_t readSize = merge8To16(readData(address),   //Read two bytes as one unsigned int16
+    uint16_t readSize = merge8To16(readData(address),   //Read two bytes as one uint8_t16
                                    readData(address + 1));
     return readSize < SERIAL_LENGTH_MAX ? readSize : SERIAL_LENGTH_MAX; //Return read value, capped at max serial length
 }
@@ -427,4 +457,97 @@ void processButton(uint8_t buttonIndex)
     Serial.print("HID send ms: ");
     Serial.println(((float)micros()-(float)startMicros)/(float)1000.0);
 #endif
+}
+
+void SRSelectButton(uint8_t buttonIndex)
+{
+
+}
+
+void setSRInput(boolean value)
+{
+    setBit(&PORTB, 4, value);
+}
+
+void clockSR()
+{
+    setBitHigh(&PORTE, 6);
+    setBitLow(&PORTE, 6);
+}
+
+void clockSROut()
+{
+    setBitHigh(&PORTD, 4);
+    delay(10);
+    setBitLow(&PORTD, 4);
+//    toggleBit(&PORTD, 4);
+}
+
+void setBit(volatile uint8_t *byte, uint8_t bit, bool value)
+{
+    if(value)
+        setBitHigh(byte, bit);
+    else
+        setBitLow(byte, bit);
+}
+
+void setBit(uint8_t *byte, uint8_t bit, bool value)
+{
+
+    if(value)
+        setBitHigh(byte, bit);
+    else
+        setBitLow(byte, bit);
+}
+
+void setBitHigh(uint8_t *byte, uint8_t bit)
+{
+    *byte |= (1 << bit);
+}
+
+void setBitHigh(volatile uint8_t *byte, uint8_t bit)
+{
+    *byte |= (1 << bit);
+}
+
+void setBitLow(uint8_t *byte, uint8_t bit)
+{
+    *byte &= ~(1 << bit);
+}
+
+void setBitLow(volatile uint8_t *byte, uint8_t bit)
+{
+    *byte &= ~(1 << bit);
+}
+
+double log(double base, double value)
+{
+    return log(value) / log(base);
+}
+
+void toggleBit(volatile uint8_t *byte, uint8_t bit)
+{
+    *byte ^= 1 << bit;
+}
+
+void toggleBit(uint8_t *byte, uint8_t bit)
+{
+    *byte ^= 1 << bit;
+}
+
+void setSR(uint8_t value)
+{
+    setBitLow(&PORTD, 4);
+    for(uint8_t j = 7; j < 8; --j)
+    {
+        Serial.print((value & 1 << j) != 0);
+        setSRInput((value & 1 << j) != 0);
+        clockSR();
+    }
+    setBitHigh(&PORTD, 4);
+}
+
+void selectButtonSR(uint8_t column, uint8_t row)
+{
+    setSR((min(63, column) << 2) | min(7, row));
 }
