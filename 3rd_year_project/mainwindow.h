@@ -86,7 +86,7 @@ private:
     QMap<QString, QTreeWidgetItem*> _treeItemsMap;
 //    QString _arduinoPortName;
 //    bool _isArduinoAvailable = false;
-    QSerialPort *_arduino;
+    QSerialPort *_mcu_serial;
     QByteArray _serialData;
     QString _serialBuffer, _parsedData;
     int _debugInt = 0, _debugInt2 = 0;

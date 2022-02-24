@@ -30,6 +30,7 @@
 
 unsigned long lastSend;
 boolean button = true, wasButton = true;
+boolean debounce[BUTTON_COUNT];
 
 void processSerial(const char inputChars[]);
 void writeData(uint16_t address, byte data);
@@ -61,6 +62,7 @@ void setBitHigh(volatile uint8_t *byte, uint8_t bit);
 void setBitHigh(uint8_t *byte, uint8_t bit);
 void setBitLow(volatile uint8_t *byte, uint8_t bit);
 void setBitLow(uint8_t *byte, uint8_t bit);
+boolean readBit(volatile uint8_t *byte, uint8_t bit);
 void toggleBit(volatile uint8_t *byte, uint8_t bit);
 void toggleBit(uint8_t *byte, uint8_t bit);
 void setSR(uint8_t value);
@@ -80,6 +82,9 @@ void setup()
     Wire.begin();
 //    writeData(0, "32511523", 8);
 
+    //Set Button Read pin as pull down input
+    setBitLow(&DDRB, 2);
+    setBitLow(&PORTB, 2);
     //Set SER as output
     setBitHigh(&DDRB, 4);
     //Set SRCLK as output
@@ -92,28 +97,25 @@ void setup()
 //    PORTB &= ~(1 << 2);
 
 //    pinMode(A10, INPUT);
+    delay(5000);
 }
 
 void loop()
 {
-    for(uint8_t i = 0; i < 4; ++i)
+    char debug[9];
+    debug[8] = '\0';
+    for(uint8_t i = 0; i < 8; ++i)
     {
-        selectButtonSR(0, i);
-        delay(100);
+        selectButtonSR(i, 0);
+        boolean buttonValue = readBit(&PINB, 2);
+        debug[i] = buttonValue ? '1' : '0';
+        if(buttonValue && !debounce[i])
+            processButton(i);
+        debounce[i] = buttonValue;
+        delay(25);
     }
-
-    return;
-
-    button = PINF & 1 << 5;
-    if(button && !wasButton)
-        processButton(0);
-    wasButton = button;
-
-    if(lastSend + 4200 < millis())
-    {
-        Serial.print(freeMemory());
-        lastSend = millis();
-    }
+    Serial.println(debug);
+    delay(500);
 
     while (Serial.available())
     {
@@ -520,6 +522,11 @@ void setBitLow(volatile uint8_t *byte, uint8_t bit)
     *byte &= ~(1 << bit);
 }
 
+boolean readBit(volatile uint8_t *byte, uint8_t bit)
+{
+    return *byte & (1 << bit);
+}
+
 double log(double base, double value)
 {
     return log(value) / log(base);
@@ -540,7 +547,7 @@ void setSR(uint8_t value)
     setBitLow(&PORTD, 4);
     for(uint8_t j = 7; j < 8; --j)
     {
-        Serial.print((value & 1 << j) != 0);
+//        Serial.print((value & 1 << j) != 0);
         setSRInput((value & 1 << j) != 0);
         clockSR();
     }
