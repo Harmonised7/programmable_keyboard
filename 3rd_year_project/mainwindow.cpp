@@ -61,6 +61,8 @@ MainWindow::MainWindow(QWidget *parent) :
     _serialTimeoutTimer.setSingleShot(true);
     _sendQueuedSerialTimer.setSingleShot(true);
 
+    ui->outputTextBox->setVisible(false);
+
 //    this->window()->adjustSize();
 //    this->window()->setFixedSize(this->window()->size());
 }
@@ -497,5 +499,11 @@ void MainWindow::on_actionImport_triggered()
     }
     else
         QMessageBox::warning(this, "Invalid JSON", "Invalid JSON structure of selected file.");
+}
+
+
+void MainWindow::on_actionShow_Console_enabledChanged(bool enabled)
+{
+    ui->outputTextBox->setVisible(enabled);
 }
 

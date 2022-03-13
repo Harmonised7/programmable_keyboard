@@ -102,20 +102,23 @@ void setup()
 
 void loop()
 {
-    char debug[9];
-    debug[8] = '\0';
-    for(uint8_t i = 0; i < 8; ++i)
+    for(uint8_t row = 0; row < ROWS; ++row)
     {
-        selectButtonSR(i, 0);
-        boolean buttonValue = readBit(&PINB, 2);
-        debug[i] = buttonValue ? '1' : '0';
-        if(buttonValue && !debounce[i])
-            processButton(i);
-        debounce[i] = buttonValue;
-        delay(25);
+        for(uint8_t col = 0; col < COLS; ++col)
+        {
+            int index = col + row*COLS;
+            selectButtonSR(col, row);
+            delay(5);
+            boolean buttonValue = readBit(&PINB, 2);
+            if(buttonValue && !debounce[index])
+                processButton(index);
+            debounce[index] = buttonValue;
+//            Serial.print(readBit(&PINB, 2));
+        }
     }
-    Serial.println(debug);
-    delay(500);
+//    for(int i = 1; i <= BUTTON_COUNT; ++i)
+//        Serial.print(debounce[BUTTON_COUNT-i]);
+//    Serial.println();
 
     while (Serial.available())
     {
@@ -556,5 +559,5 @@ void setSR(uint8_t value)
 
 void selectButtonSR(uint8_t column, uint8_t row)
 {
-    setSR((min(63, column) << 2) | min(7, row));
+    setSR(min(63, column) | (min(7, row) << 3));
 }

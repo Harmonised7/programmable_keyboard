@@ -66,6 +66,10 @@ private slots:
 
     void writeQueuedSerial();
 
+    void on_actionShow_Console_triggered();
+
+    void on_actionShow_Console_enabledChanged(bool enabled);
+
 private:
     //Static Fields
     Ui::MainWindow *ui;
