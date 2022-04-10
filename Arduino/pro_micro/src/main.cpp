@@ -31,8 +31,15 @@
 unsigned long lastSend;
 boolean button = true, wasButton = true;
 boolean debounce[BUTTON_COUNT];
+uint8_t buttonRemap[24] = {5, 18, 19, 20, 21, 22,
+                           23, 12, 13, 14, 15, 16,
+                           17, 6, 7, 8, 9, 10,
+                           11, 0, 1, 2, 3, 4};
 
 void processSerial(const char inputChars[]);
+double map(double input, double inLow, double inHigh, double outLow, double outHigh);
+
+//EEPROM
 void writeData(uint16_t address, byte data);
 void writeData(uint16_t address, const byte data[], int size);
 void writeData(uint16_t address, const char data[], int size);
@@ -43,19 +50,21 @@ void saveButtonData(uint8_t buttonIndex, const byte data[]);
 void readButtonData(uint8_t buttonIndex, byte buffer[], int size);
 void readButtonData(uint8_t buttonIndex, byte buffer[]);
 uint16_t readButtonSize(uint8_t buttonIndex);
-void sendHID(const char chars[]);
-void sendHID(const char chars[], uint16_t gapMs);
 uint16_t getButtonAddress(uint8_t buttonIndex);
 uint16_t getButtonSizeAddress(uint8_t buttonIndex);
 uint16_t getStringLength(const char inputChars[]);
+
+//JSON Processing
 DynamicJsonDocument stringToJsonObject(const char inputChars[]);
 void actionJsonToHID(DynamicJsonDocument &json);
 void buttonJsonToHID(DynamicJsonDocument &json);
 void processButton(uint8_t buttonIndex);
-void setSRInput(boolean value);
-void clockSR();
-void clockSROut();
 
+//Keyboard helpers
+void sendHID(const char chars[]);
+void sendHID(const char chars[], uint16_t gapMs);
+
+//Bit Manipulation
 void setBit(volatile uint8_t *byte, uint8_t bit, bool value);
 void setBit(uint8_t *byte, uint8_t bit, bool value);
 void setBitHigh(volatile uint8_t *byte, uint8_t bit);
@@ -65,8 +74,13 @@ void setBitLow(uint8_t *byte, uint8_t bit);
 boolean readBit(volatile uint8_t *byte, uint8_t bit);
 void toggleBit(volatile uint8_t *byte, uint8_t bit);
 void toggleBit(uint8_t *byte, uint8_t bit);
+
+//Shift Register
 void setSR(uint8_t value);
 void selectButtonSR(uint8_t column, uint8_t row);
+void setSRInput(boolean value);
+void clockSR();
+void clockSROut();
 
 double log(double base, double value);
 
@@ -108,12 +122,14 @@ void loop()
         {
             int index = col + row*COLS;
             selectButtonSR(col, row);
-            delay(5);
             boolean buttonValue = readBit(&PINB, 2);
             if(buttonValue && !debounce[index])
-                processButton(index);
+            {
+                processButton(buttonRemap[index]);
+//                processButton(index);
+            }
             debounce[index] = buttonValue;
-//            Serial.print(readBit(&PINB, 2));
+//            Serial.print(buttonValue);
         }
     }
 //    for(int i = 1; i <= BUTTON_COUNT; ++i)
@@ -333,7 +349,8 @@ void actionJsonToHID(DynamicJsonDocument &json)
 {
     if(json.containsKey("t"))
     {
-        const char type = json.getMember("t").as<String>().charAt(0);
+        String stringType = json.getMember("t").as<String>();
+        const char type = stringType.charAt(0);
         Serial.print("type: ");
         Serial.println(type);
         switch(type)
@@ -359,10 +376,12 @@ void actionJsonToHID(DynamicJsonDocument &json)
                 if(json.containsKey("v"))
                 {
                     const int key = json.getMember("v").as<int>();
-                    Keyboard.press(key);
+                    if(stringType.length() == 1 || stringType.charAt(1) == 'd')
+                        Keyboard.press(key);
                     if(json.containsKey("d"))
                         delay(json.getMember("d").as<int>());
-                    Keyboard.release(key);
+                    if(stringType.length() == 1 || stringType.charAt(1) == 'u')
+                        Keyboard.release(key);
                 }
             }
                 break;
@@ -393,12 +412,37 @@ void actionJsonToHID(DynamicJsonDocument &json)
                     times = json.getMember("x").as<int>();
                 if(json.containsKey("d"))
                     clickDelay = json.getMember("d").as<int>();
+                boolean up = true, down = true;
+                if(stringType.length() > 1)
+                {
+                    if(stringType.charAt(0) == 'u')
+                        down = false;
+                    else if(stringType.charAt(0) == 'd')
+                        up = false;
+                }
                 if(times < 1)
                     times = 1;
                 while(times-- > 0)
                 {
                     Mouse.begin();
-                    Mouse.click(mouseButton);
+                    if(up && down)
+                    {
+                        Serial.println("CLICK");
+                        Mouse.click(mouseButton);
+                    }
+                    else
+                    {
+                        if(up)
+                        {
+                            Serial.println("CLICK DOWN");
+                            Mouse.press(mouseButton);
+                        }
+                        else
+                        {
+                            Serial.println("CLICK UP");
+                            Mouse.release(mouseButton);
+                        }
+                    }
                     delay(clickDelay);
                     Mouse.end();
                 }
@@ -406,7 +450,42 @@ void actionJsonToHID(DynamicJsonDocument &json)
             }
 
             case 'm':   //Handle Mouse Move action
+                char x = 0, y = 0;
+                int moveTime = 0;
+                if(json.containsKey("d"))
+                    moveTime = json.getMember("d").as<int>();
+                if(json.containsKey("x"))
+                    x = json.getMember("x").as<int8_t>();
+                if(json.containsKey("y"))
+                    y = json.getMember("y").as<int8_t>();
+                Mouse.begin();
+                if(moveTime > 0)
+                {
+                    double pos;
+                    uint8_t xMoved = 0, yMoved = 0, xToMove = 0, yToMove = 0;
+                    unsigned long currentMillis = millis(), startTime = currentMillis;
+                    unsigned long gap = currentMillis - startTime;
+                    while(gap < moveTime)
+                    {
+                        gap = currentMillis - startTime;
 
+                        pos = map((double) gap, 0.0, moveTime-1.0, 0.0, x);
+                        if(xMoved < pos)
+                            xToMove = pos - xMoved;
+
+                        pos = map((double) gap, 0.0, moveTime-1.0, 0.0, y);
+                        if(yMoved < pos)
+                            yToMove = pos - yMoved;
+
+                        Mouse.move(xToMove, yToMove);
+                        xMoved += xToMove;
+                        yMoved += yToMove;
+                        currentMillis = millis();
+                    }
+                }
+                else
+                    Mouse.move(x, y);
+                Mouse.end();
                 break;
         }
     }
@@ -560,4 +639,12 @@ void setSR(uint8_t value)
 void selectButtonSR(uint8_t column, uint8_t row)
 {
     setSR(min(63, column) | (min(7, row) << 3));
+}
+
+double map(double input, double inLow, double inHigh, double outLow, double outHigh)
+{
+    if (inLow == inHigh)
+        return outHigh;
+    else
+        return ((input - inLow) / (inHigh - inLow)) * (outHigh - outLow) + outLow;
 }

@@ -51,7 +51,10 @@ QJsonObject *Entry::toJson()
     {
         QString value = _value;
         if(_type == "key" || _type == "key_down" || _type == "key_up")
-            json->insert(ButtonData::getToAlias(VALUE), ButtonData::getToAsciiAlias(_value));
+        {
+            int asciiValue = ButtonData::getToAsciiAlias(_value);
+            json->insert(ButtonData::getToAlias(VALUE), asciiValue == 0 ? _value.at(0).toLatin1() : asciiValue);
+        }
         else
             json->insert(ButtonData::getToAlias(VALUE), value);
     }

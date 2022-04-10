@@ -144,7 +144,7 @@ void ButtonData::addButtonTemplateActions(QString templateType)
 
     addTemplateAction( templateType, "move_mouse", "0", { { "x", "100" }, { "y", "100" }, { "delay", "20" } } );
     addTemplateAction( templateType, "drag_mouse", "0", { { "x", "100" }, { "y", "100" }, { "delay", "20" } } );
-    addTemplateAction( templateType, "set_mouse", "0", { { "x", "100" }, { "y", "100" } } );
+//    addTemplateAction( templateType, "set_mouse", "0", { { "x", "100" }, { "y", "100" } } );
 }
 
 void ButtonData::registerAliases()
@@ -152,12 +152,16 @@ void ButtonData::registerAliases()
     registerAlias("type", "t");
     registerAlias("write", "w");
     registerAlias("click", "c");
+    registerAlias("click_down", "cd");
+    registerAlias("click_up", "cu");
     registerAlias("delay", "d");
     registerAlias("value", "v");
     registerAlias("times", "x");
     registerAlias("key", "k");
     registerAlias("key_up", "ku");
     registerAlias("key_down", "kd");
+    registerAlias("move_mouse", "mm");
+//    registerAlias("set_mouse", "ms");
 
     registerAsciiAlias(128, "ctrl");
     registerAsciiAlias(129, "shift");
@@ -237,8 +241,9 @@ ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonObject jsonButtonsData)
             }
             if(type == "key" || type == "key_down" || type == "key_up")
             {
+                int number = jsonAction.value(VALUE_ALIAS).toInt();
                 QString test = getFromAsciiAlias(jsonAction.value(VALUE_ALIAS).toInt());
-                QString value = jsonAction.contains(VALUE_ALIAS) ? test : 0;
+                QString value = jsonAction.contains(VALUE_ALIAS) ? test : QString::number(number);
                 entry->setValue(value);
             }
             else
