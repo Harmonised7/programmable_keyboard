@@ -211,7 +211,7 @@ int ButtonData::getToAsciiAlias(QString word)
 
 QString ButtonData::getFromAsciiAlias(int ascii)
 {
-    return _asciiToWordMap->contains(ascii) ? _asciiToWordMap->value(ascii).toLower() : QString::number(ascii);
+    return _asciiToWordMap->contains(ascii) ? _asciiToWordMap->value(ascii).toLower() : QString((char) ascii);
 }
 
 ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonObject jsonButtonsData)
@@ -240,12 +240,7 @@ ButtonsDataMap ButtonData::buttonsDataFromJson(QJsonObject jsonButtonsData)
                 continue;
             }
             if(type == "key" || type == "key_down" || type == "key_up")
-            {
-                int number = jsonAction.value(VALUE_ALIAS).toInt();
-                QString test = getFromAsciiAlias(jsonAction.value(VALUE_ALIAS).toInt());
-                QString value = jsonAction.contains(VALUE_ALIAS) ? test : QString::number(number);
-                entry->setValue(value);
-            }
+                entry->setValue(getFromAsciiAlias(jsonAction.value(VALUE_ALIAS).toInt()));
             else
             {
                 QString value = jsonAction.contains(VALUE_ALIAS) ? jsonAction.value(VALUE_ALIAS).toString() : 0;
