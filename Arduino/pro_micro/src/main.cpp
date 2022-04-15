@@ -10,8 +10,6 @@
 #include<Keyboard.h>
 #include<Mouse.h>
 
-#include<MemoryFree.h>
-
 #define SERIAL_LENGTH_MAX 1024
 #define EEPROM_ADDRESS_IC2 0x50
 
@@ -351,8 +349,8 @@ void actionJsonToHID(DynamicJsonDocument &json)
     {
         String stringType = json.getMember("t").as<String>();
         const char type = stringType.charAt(0);
-        Serial.print("type: ");
-        Serial.println(type);
+//        Serial.print("type: ");
+//        Serial.println(type);
         switch(type)
         {
             case 'w':   //Handle Write action
@@ -450,6 +448,7 @@ void actionJsonToHID(DynamicJsonDocument &json)
             }
 
             case 'm':   //Handle Mouse Move action
+            {
                 char x = 0, y = 0;
                 int moveTime = 0;
                 if(json.containsKey("d"))
@@ -486,6 +485,16 @@ void actionJsonToHID(DynamicJsonDocument &json)
                 else
                     Mouse.move(x, y);
                 Mouse.end();
+                break;
+            }
+
+            case 'd':
+            {
+                int delayTime = 0;
+                if(json.containsKey("v"))
+                    delayTime = json.getMember("v").as<int>();
+                delay(delayTime);
+            }
                 break;
         }
     }
