@@ -10,7 +10,7 @@
 #include<Keyboard.h>
 #include<Mouse.h>
 
-#define SERIAL_LENGTH_MAX 1024
+#define SERIAL_LENGTH_MAX 756
 #define EEPROM_ADDRESS_IC2 0x50
 
 #define DEBUG_1
