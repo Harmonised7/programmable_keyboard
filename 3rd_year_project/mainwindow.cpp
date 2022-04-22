@@ -447,7 +447,7 @@ void MainWindow::writeQueuedSerial()
     qDebug() << "Length" << _queuedSerialToSend.length();
     if(_queuedSerialToSend.length() > 0)
     {
-        qDebug() << "Sending from queue";
+        qDebug() << "Sending from queue" << _queuedSerialToSend.at(0).length();
         _mcu_serial->write(_queuedSerialToSend.at(0).toStdString().c_str());
         _queuedSerialToSend.removeFirst();
         _sendQueuedSerialTimer.start(_SERIAL_WRITE_TIMEOUT);
