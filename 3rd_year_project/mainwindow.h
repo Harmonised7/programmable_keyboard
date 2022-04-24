@@ -67,7 +67,7 @@ private slots:
 
     void writeQueuedSerial();
 
-    void on_actionShow_Console_enabledChanged(bool enabled);
+    void on_actionShow_Console_triggered(bool checked);
 
 private:
     //Static Fields

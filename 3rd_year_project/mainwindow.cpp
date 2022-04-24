@@ -502,8 +502,8 @@ void MainWindow::on_actionImport_triggered()
 }
 
 
-void MainWindow::on_actionShow_Console_enabledChanged(bool enabled)
+void MainWindow::on_actionShow_Console_triggered(bool checked)
 {
-    ui->outputTextBox->setVisible(enabled);
+    ui->outputTextBox->setVisible(checked);
 }
 
