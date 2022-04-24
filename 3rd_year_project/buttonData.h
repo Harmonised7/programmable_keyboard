@@ -3,6 +3,7 @@
 
 #include "util.h"
 #include "entry.h"
+#include "prefs.h"
 
 #include <QMap>
 #include <QString>

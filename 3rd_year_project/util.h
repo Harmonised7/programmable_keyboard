@@ -1,9 +1,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include "entry.h"
-#include "prefs.h"
-
 #include <QMap>
 #include <QDebug>
 #include <QList>
@@ -11,6 +8,7 @@
 #include <QTreeWidgetItem>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QByteArray>
 #include <QFileDialog>
 #include <QFile>

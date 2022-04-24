@@ -3,6 +3,7 @@
 
 #include "util.h"
 #include "buttonData.h"
+#include "prefs.h"
 
 #include <QMainWindow>
 
@@ -65,8 +66,6 @@ private slots:
     void onReadFinished();
 
     void writeQueuedSerial();
-
-    void on_actionShow_Console_triggered();
 
     void on_actionShow_Console_enabledChanged(bool enabled);
 
