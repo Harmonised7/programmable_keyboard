@@ -348,6 +348,7 @@ void actionJsonToHID(DynamicJsonDocument &json)
     if(json.containsKey("t"))
     {
         String stringType = json.getMember("t").as<String>();
+        uint8_t stringTypeLength = stringType.length();
         const char type = stringType.charAt(0);
 //        Serial.print("type: ");
 //        Serial.println(type);
@@ -373,12 +374,29 @@ void actionJsonToHID(DynamicJsonDocument &json)
             {
                 if(json.containsKey("v"))
                 {
-                    const int key = json.getMember("v").as<int>();
-                    if(stringType.length() == 1 || stringType.charAt(1) == 'd')
-                        Keyboard.press(key);
+                    uint8_t times = 1;
+                    if(json.containsKey("x"))
+                        times = json.getMember("x").as<int>();
+                    uint8_t keyDelay = 0;
                     if(json.containsKey("d"))
-                        delay(json.getMember("d").as<int>());
-                    if(stringType.length() == 1 || stringType.charAt(1) == 'u')
+                        keyDelay = json.getMember("d").as<int>();
+                    const int key = json.getMember("v").as<int>();
+
+                    if(stringTypeLength == 1 || stringType.charAt(1) == 'd')
+                    {
+                        if(stringTypeLength == 1)
+                        {
+                            for(int i = 0; i < times; ++i)
+                            {
+                                Keyboard.press(key);
+                                delay(keyDelay);
+                                Keyboard.release(key);
+                            }
+                        }
+                        else
+                            Keyboard.press(key);
+                    }
+                    if(stringTypeLength == 1 || stringType.charAt(1) == 'u')
                         Keyboard.release(key);
                 }
             }
