@@ -13,8 +13,8 @@
 #define SERIAL_LENGTH_MAX 756
 #define EEPROM_ADDRESS_IC2 0x50
 
-#define DEBUG_1
-#define DEBUG_2
+//#define DEBUG_1
+//#define DEBUG_2
 //#define COUNT_MS
 //#define JSON_ERROR_CHECK
 //#define DYNAMICALLY_OPTIMIZE_JSON
@@ -443,19 +443,19 @@ void actionJsonToHID(DynamicJsonDocument &json)
                     Mouse.begin();
                     if(up && down)
                     {
-                        Serial.println("CLICK");
+//                        Serial.println("CLICK");
                         Mouse.click(mouseButton);
                     }
                     else
                     {
                         if(up)
                         {
-                            Serial.println("CLICK DOWN");
+//                            Serial.println("CLICK DOWN");
                             Mouse.press(mouseButton);
                         }
                         else
                         {
-                            Serial.println("CLICK UP");
+//                            Serial.println("CLICK UP");
                             Mouse.release(mouseButton);
                         }
                     }
