@@ -86,13 +86,15 @@ uint16_t merge8To16(uint8_t a, uint8_t b);
 
 char debugMsg[64];
 
+/**
+ * MCU Setup code - only runs once.
+ */
 void setup()
 {
     Serial.begin(115200);
     Serial.setTimeout(200);
 
     Wire.begin();
-//    writeData(0, "32511523", 8);
 
     //Set Button Read pin as pull down input
     setBitLow(&DDRB, 2);
@@ -112,6 +114,9 @@ void setup()
     delay(5000);
 }
 
+/**
+ * MCU program - loops forever after initialization.
+ */
 void loop()
 {
     for(uint8_t row = 0; row < ROWS; ++row)
@@ -122,17 +127,10 @@ void loop()
             selectButtonSR(col, row);
             boolean buttonValue = readBit(&PINB, 2);
             if(buttonValue && !debounce[index])
-            {
                 processButton(buttonRemap[index]);
-//                processButton(index);
-            }
             debounce[index] = buttonValue;
-//            Serial.print(buttonValue);
         }
     }
-//    for(int i = 1; i <= BUTTON_COUNT; ++i)
-//        Serial.print(debounce[BUTTON_COUNT-i]);
-//    Serial.println();
 
     while (Serial.available())
     {
@@ -150,6 +148,13 @@ void loop()
     }
 }
 
+/**
+ * Processes the received serial data into a json
+ * object and deals with it depending on its'
+ * contents. In most cases, writes data into
+ * the EEPROM for the specified button.
+ * @param inputChars raw received serial data
+ */
 void processSerial(const char inputChars[])
 {
 #ifdef DEBUG_2
@@ -171,18 +176,35 @@ void processSerial(const char inputChars[])
     }
 }
 
+/**
+ * Writes data into the EEPROM
+ * @param address memory address on the EEPROM
+ * @param data data to be written
+ * @param size length of the data to be written
+ */
 void writeData(uint16_t address, const char data[], int size)
 {
     while(size-- >= 0)
         writeData(address++, *data++);
 }
 
+/**
+ * Writes data into the EEPROM
+ * @param address memory address on the EEPROM
+ * @param data data to be written
+ * @param size length of the data to be written
+ */
 void writeData(uint16_t address, const byte data[], int size)
 {
     while(size-- >= 0)
         writeData(address++, *data++);
 }
 
+/**
+ * Writes data into the EEPROM
+ * @param address memory address on the EEPROM
+ * @param data data to be written
+ */
 void writeData(uint16_t address, byte data)
 {
 #ifdef EEPROM_DEBUG_1
@@ -197,6 +219,12 @@ void writeData(uint16_t address, byte data)
     delay(5);           //Delay 5ms (The datasheet states a write takes a maximum of 5ms)
 }
 
+/**
+ * Reads data from the EEPROM
+ * @param address memory address on the EEPROM
+ * @param buffer buffer that will receive the read data
+ * @param size length of the data to be read
+ */
 void readData(uint16_t address, byte buffer[], int size)
 {
     while(size-- >= 0)  //For every specified count
@@ -205,6 +233,12 @@ void readData(uint16_t address, byte buffer[], int size)
         *buffer++ = readData(address++);
 }
 
+/**
+ * Reads data from the EEPROM
+ * @param address memory address on the EEPROM
+ * @param buffer buffer that will receive the read data
+ * @param size length of the data to be read
+ */
 void readData(uint16_t address, char buffer[], int size)
 {
     while(size-- >= 0)  //For every specified count
@@ -213,6 +247,11 @@ void readData(uint16_t address, char buffer[], int size)
         *buffer++ = (char) readData(address++);
 }
 
+/**
+ * Reads data from the EEPROM
+ * @param address memory address on the EEPROM
+ * @return the data at specified address
+ */
 byte readData(uint16_t address)
 {
     byte data = 0xFF;                           //Initialize read data as 255
@@ -223,6 +262,11 @@ byte readData(uint16_t address)
     return data;                                //Return the read data
 }
 
+/**
+ * Greets the EEPROM by specifying which address
+ * the context of the next instructions will be
+ * @param address memory address on the EEPROM
+ */
 void greetEeprom(uint16_t address)
 {
     Wire.beginTransmission(EEPROM_ADDRESS_IC2);    //Begin Transmission
@@ -230,6 +274,11 @@ void greetEeprom(uint16_t address)
     Wire.write((int)(address & 0xff));          //Send Least Significant Byte
 }
 
+/**
+ * Returns the index of the string terminator
+ * @param inputChars input string
+ * @return index of string terminator
+ */
 uint16_t getStringLength(const char inputChars[])
 {
     int i = 0;                      //Initialize length at 0
@@ -238,6 +287,10 @@ uint16_t getStringLength(const char inputChars[])
     return i;                       //Return length
 }
 
+/**
+ * Sends HID input for every character
+ * @param chars characters to be sent as HID
+ */
 void sendHID(const char chars[])
 {
     const uint16_t length = getStringLength(chars); //Determine length of string
@@ -245,6 +298,11 @@ void sendHID(const char chars[])
         Keyboard.write(chars[i]);                         //Write the char
 }
 
+/**
+ * Sends HID input for every character with specified delay
+ * @param chars characters to be sent as HID
+ * @param gapMs delay between each character sending
+ */
 void sendHID(const char chars[], const uint16_t gapMs)
 {
 #ifdef DEBUG_1
@@ -259,6 +317,11 @@ void sendHID(const char chars[], const uint16_t gapMs)
     }
 }
 
+/**
+ *
+ * @param buttonIndex
+ * @return
+ */
 uint16_t getButtonAddress(uint8_t buttonIndex)
 {
     //Do not allow allocating buttons beyond what the keyboard supports
@@ -267,6 +330,11 @@ uint16_t getButtonAddress(uint8_t buttonIndex)
     return INFO_OFFSET + buttonIndex*BUTTON_ALLOCATION;
 }
 
+/**
+ * Saves data for a specific button index
+ * @param buttonIndex the index of the button
+ * @param data the data to be written for this button
+ */
 void saveButtonData(uint8_t buttonIndex, const byte data[])
 {
 #ifdef DEBUG_1
@@ -288,16 +356,32 @@ void saveButtonData(uint8_t buttonIndex, const byte data[])
 #endif
 }
 
+/**
+ * Reads specified button data into the buffer
+ * @param buttonIndex the index of the button
+ * @param buffer buffer that is populated with the read data
+ * @param size size of the data to be read
+ */
 void readButtonData(uint8_t buttonIndex, byte buffer[], int size)
 {
     readData(getButtonAddress(buttonIndex), buffer, size);
 }
 
+/**
+ * Reads specified button data into the buffer
+ * @param buttonIndex the index of the button
+ * @param buffer buffer that is populated with the read data
+ */
 void readButtonData(uint8_t buttonIndex, byte buffer[])
 {
     readData(getButtonAddress(buttonIndex), buffer, readButtonSize(buttonIndex));
 }
 
+/**
+ * Reads cached size of the button
+ * @param buttonIndex index of the button
+ * @return size of the stored data for this button
+ */
 uint16_t readButtonSize(uint8_t buttonIndex)
 {
     uint16_t address = getButtonSizeAddress(buttonIndex);  //Determine where button size is stored
@@ -306,16 +390,32 @@ uint16_t readButtonSize(uint8_t buttonIndex)
     return readSize < SERIAL_LENGTH_MAX ? readSize : SERIAL_LENGTH_MAX; //Return read value, capped at max serial length
 }
 
+/**
+ * Determines the address of the button size cache
+ * @param buttonIndex index of the button
+ * @return address of the button size cache
+ */
 uint16_t getButtonSizeAddress(uint8_t buttonIndex)
 {
     return buttonIndex * BUTTON_INFO_SIZE_ALLOCATION;
 }
 
+/**
+ * Joins together two bytes into an unsigned 2 bytes length integer
+ * @param a unsigned 8 bit integer
+ * @param b unsigned 8 bit integer
+ * @return unsigned 16 bit integer
+ */
 uint16_t merge8To16(uint8_t a, uint8_t b)
 {
     return a | ((uint16_t) b << 8);
 }
 
+/**
+ * Parses json from string
+ * @param inputChars string input
+ * @return json object
+ */
 DynamicJsonDocument stringToJsonObject(const char inputChars[])
 {
     DynamicJsonDocument doc(SERIAL_LENGTH_MAX);
@@ -343,6 +443,10 @@ DynamicJsonDocument stringToJsonObject(const char inputChars[])
     return doc;
 }
 
+/**
+ * Processes json action into HID inputs
+ * @param json json action object
+ */
 void actionJsonToHID(DynamicJsonDocument &json)
 {
     if(json.containsKey("t"))
@@ -518,6 +622,11 @@ void actionJsonToHID(DynamicJsonDocument &json)
     }
 }
 
+/**
+ * Separates button into its' actions and
+ * processes each as an HID input
+ * @param json json object
+ */
 void buttonJsonToHID(DynamicJsonDocument &json)
 {
     JsonArray actions =  json["a"];             //Retrieve list of actions
@@ -525,11 +634,16 @@ void buttonJsonToHID(DynamicJsonDocument &json)
         actionJsonToHID(action);             //Process the action
 }
 
+/**
+ * Processes button by its' index from the stored EEPROM
+ * @param buttonIndex the index of the button
+ */
 void processButton(uint8_t buttonIndex)
 {
-//    Serial.print("Processing Button ");
-//    Serial.println(buttonIndex);
-
+#ifdef DEBUG_1
+    Serial.print("Processing Button ");
+    Serial.println(buttonIndex);
+#endif
 #ifdef COUNT_MS
     unsigned long startMicros = micros();
 #endif
@@ -570,22 +684,28 @@ void processButton(uint8_t buttonIndex)
 #endif
 }
 
-void SRSelectButton(uint8_t buttonIndex)
-{
-
-}
-
+/**
+ * Sets the bit value for the pin that
+ * gets clocked into the Shift Register
+ * @param value bit value
+ */
 void setSRInput(boolean value)
 {
     setBit(&PORTB, 4, value);
 }
 
+/**
+ * Clocks the Shift Register
+ */
 void clockSR()
 {
     setBitHigh(&PORTE, 6);
     setBitLow(&PORTE, 6);
 }
 
+/**
+ * Clocks the shifted Shift Register inputs to outputs
+ */
 void clockSROut()
 {
     setBitHigh(&PORTD, 4);
@@ -594,6 +714,12 @@ void clockSROut()
 //    toggleBit(&PORTD, 4);
 }
 
+/**
+ * Sets a specific bit of a byte
+ * @param byte the byte
+ * @param bit the bit position
+ * @param value the new value
+ */
 void setBit(volatile uint8_t *byte, uint8_t bit, bool value)
 {
     if(value)
@@ -602,6 +728,12 @@ void setBit(volatile uint8_t *byte, uint8_t bit, bool value)
         setBitLow(byte, bit);
 }
 
+/**
+ * Sets a specific bit of a byte
+ * @param byte the byte
+ * @param bit the bit position
+ * @param value the new value
+ */
 void setBit(uint8_t *byte, uint8_t bit, bool value)
 {
 
@@ -611,46 +743,92 @@ void setBit(uint8_t *byte, uint8_t bit, bool value)
         setBitLow(byte, bit);
 }
 
+/**
+ * Sets a specific bit of a byte to high
+ * @param byte the byte
+ * @param bit the bit position
+ */
 void setBitHigh(uint8_t *byte, uint8_t bit)
 {
     *byte |= (1 << bit);
 }
 
+/**
+ * Sets a specific bit of a byte to high
+ * @param byte the byte
+ * @param bit the bit position
+ */
 void setBitHigh(volatile uint8_t *byte, uint8_t bit)
 {
     *byte |= (1 << bit);
 }
 
+/**
+ * Sets a specific bit of a byte to low
+ * @param byte the byte
+ * @param bit the bit position
+ */
 void setBitLow(uint8_t *byte, uint8_t bit)
 {
     *byte &= ~(1 << bit);
 }
 
+/**
+ * Sets a specific bit of a byte to low
+ * @param byte the byte
+ * @param bit the bit position
+ */
 void setBitLow(volatile uint8_t *byte, uint8_t bit)
 {
     *byte &= ~(1 << bit);
 }
 
+/**
+ * Reads a specific bit value from a byte
+ * @param byte the byte
+ * @param bit the bit to read
+ * @return the value read
+ */
 boolean readBit(volatile uint8_t *byte, uint8_t bit)
 {
     return *byte & (1 << bit);
 }
 
+/**
+ * Performs a logarithmic calculation
+ * @param base base value
+ * @param value input value
+ * @return output of the calculation
+ */
 double log(double base, double value)
 {
     return log(value) / log(base);
 }
 
+/**
+ * Toggles a specific bit from a byte
+ * @param byte the byte
+ * @param bit the bit to be toggled
+ */
 void toggleBit(volatile uint8_t *byte, uint8_t bit)
 {
     *byte ^= 1 << bit;
 }
 
+/**
+ * Toggles a specific bit from a byte
+ * @param byte the byte
+ * @param bit the bit to be toggled
+ */
 void toggleBit(uint8_t *byte, uint8_t bit)
 {
     *byte ^= 1 << bit;
 }
 
+/**
+ * Shifts a byte into the Shift Register
+ * @param value the byte to be shifted in
+ */
 void setSR(uint8_t value)
 {
     setBitLow(&PORTD, 4);
@@ -663,11 +841,27 @@ void setSR(uint8_t value)
     setBitHigh(&PORTD, 4);
 }
 
+/**
+ * Selects the specified button with the Shift Register
+ * @param column button column
+ * @param row button row
+ */
 void selectButtonSR(uint8_t column, uint8_t row)
 {
     setSR(min(63, column) | (min(7, row) << 3));
 }
 
+/**
+ * Performs the a mapping function
+ * Converts input from range inLow-inHigh
+ * to range of outLow-outHigh
+ * @param input input
+ * @param inLow range start of input
+ * @param inHigh range end of input
+ * @param outLow range start of output
+ * @param outHigh range end of output
+ * @return processed output
+ */
 double map(double input, double inLow, double inHigh, double outLow, double outHigh)
 {
     if (inLow == inHigh)
