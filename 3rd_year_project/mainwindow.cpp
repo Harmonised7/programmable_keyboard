@@ -41,7 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
             connect(button, SIGNAL(clicked()), this, SLOT(buttonPress()));
 
             _buttons.emplace(index, button);
-            ui->buttonLayout->addWidget(_buttons[ index ], row, col);
+            ui->buttonLayout->addWidget(_buttons[index], row, col);
         }
     }
     selectButton(_selectedButtonIndex);

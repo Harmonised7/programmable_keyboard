@@ -842,7 +842,8 @@ void setSR(uint8_t value)
 }
 
 /**
- * Selects the specified button with the Shift Register
+ * Selects the specified button
+ * with the Shift Register
  * @param column button column
  * @param row button row
  */
